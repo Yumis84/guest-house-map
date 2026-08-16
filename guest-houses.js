@@ -27,4 +27,6 @@ window.GUEST_HOUSES=[
   load('guest-sauna-swipe-v11.js?v=11');
   // Final sauna parity: SVG hearts in favorites/catalog + highlighted selected map marker.
   load('guest-final-parity-v12.js?v=12');
+  // v13 fixes late marker creation and raises overlapping active pins above the others.
+  load('guest-active-marker-v13.js?v=13');
 })();
