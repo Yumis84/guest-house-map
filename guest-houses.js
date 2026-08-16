@@ -34,4 +34,9 @@ window.GUEST_HOUSES=[
   mapFix.src='guest-map-fix-v6.js?v=6';
   mapFix.defer=true;
   document.head.appendChild(mapFix);
+
+  const gallery=document.createElement('script');
+  gallery.src='guest-gallery-large-v7.js?v=7';
+  gallery.defer=true;
+  document.head.appendChild(gallery);
 })();
