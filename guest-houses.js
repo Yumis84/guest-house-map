@@ -23,5 +23,5 @@ window.GUEST_HOUSES=[
   load('guest-final-ux-v5.js?v=5');
   load('guest-map-fix-v6.js?v=6');
   load('guest-gallery-large-v7.js?v=7');
-  load('guest-sheet-gesture-v9.js?v=9');
+  load('guest-sheet-gesture-v10.js?v=10');
 })();
