@@ -25,8 +25,8 @@ window.GUEST_HOUSES=[
   load('guest-gallery-large-v7.js?v=7');
   // v11 replaces the experimental v8-v10 gesture layers with the proven sauna-style behavior.
   load('guest-sauna-swipe-v11.js?v=11');
-  // Final sauna parity: SVG hearts in favorites/catalog + highlighted selected map marker.
+  // Final sauna parity: SVG hearts in favorites/catalog.
   load('guest-final-parity-v12.js?v=12');
-  // v13 fixes late marker creation and raises overlapping active pins above the others.
-  load('guest-active-marker-v13.js?v=13');
+  // v14 directly paints the real Leaflet marker DOM from the centered bottom card.
+  load('guest-marker-dom-sync-v14.js?v=14');
 })();
