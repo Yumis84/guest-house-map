@@ -14,10 +14,4 @@ window.GUEST_HOUSES=[
   s.src='guest-n8n-v1.js?v=2';
   s.defer=true;
   document.head.appendChild(s);
-
-  // Optional browser-side diagnostics. It is invisible unless the page has ?debug=1.
-  const d=document.createElement('script');
-  d.src='guest-chat-debug-v1.js?v=1';
-  d.defer=true;
-  document.head.appendChild(d);
 })();
