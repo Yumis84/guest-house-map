@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>n8n webhook diagnostics</title>
+<style>
+body{margin:0;background:#0b100f;color:#f4f7f5;font:14px/1.5 system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+main{max-width:900px;margin:0 auto;padding:20px}
+h1{font-size:22px;margin:0 0 8px}p{color:#a9b5af}
+.card{background:#111815;border:1px solid #28362f;border-radius:16px;padding:16px;margin:14px 0}
+button{border:0;border-radius:12px;padding:11px 14px;background:#f2a93b;color:#271908;font-weight:800;margin:4px 6px 4px 0}
+button.secondary{background:#202c27;color:#f4f7f5}
+pre{white-space:pre-wrap;word-break:break-word;background:#0d1311;border:1px solid #28362f;border-radius:12px;padding:12px;min-height:120px}
+code{color:#ffd37f}
+</style>
+</head>
+<body><main>
+<h1>n8n external webhook diagnostics</h1>
+<p>Оба теста идут из браузера GitHub Pages на один и тот же n8n-домен. Booking-тест отправляет заведомо невалидные данные и не должен создавать реальную бронь.</p>
+<div class="card">
+  <b>1. Chat Trigger</b><br>
+  <code>/webhook/e32deeb2-aebf-49f2-aabd-aa245542f2cd/chat</code><br><br>
+  <button id="chat">Тест Chat Trigger</button>
+</div>
+<div class="card">
+  <b>2. Booking wrapper</b><br>
+  <code>/webhook/guest-house-booking</code><br><br>
+  <button id="booking">Тест Booking webhook</button>
+</div>
+<div class="card">
+  <button class="secondary" id="copy">Копировать результат</button>
+  <pre id="out">Нажмите один из тестов.</pre>
+</div>
+<script>
+const BASE='https://n8n.xn----8sbalgvaeklgsbf4b.xn--p1ai';
+const out=document.getElementById('out');
+async function run(name,url,payload){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),20000);
+  const started=performance.now();
+  out.textContent=`${name}\nREQUEST\nPOST ${url}\nOrigin: ${location.origin}\nBody: ${JSON.stringify(payload,null,2)}\n\nWAITING…`;
+  try{
+    const r=await fetch(url,{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
+    const body=await r.text();
+    const headers={}; for(const [k,v] of r.headers.entries()) headers[k]=v;
+    out.textContent=[name,'REQUEST',`POST ${url}`,`Body: ${JSON.stringify(payload)}`,'','RESPONSE',`HTTP: ${r.status} ${r.statusText}`,`Elapsed: ${Math.round(performance.now()-started)} ms`,`Type: ${r.type}`,`URL: ${r.url}`,`Headers: ${JSON.stringify(headers,null,2)}`,`Body: ${body||'<EMPTY BODY>'}`].join('\n');
+  }catch(e){
+    out.textContent=[name,'REQUEST',`POST ${url}`,`Body: ${JSON.stringify(payload)}`,'','FETCH ERROR',`Elapsed: ${Math.round(performance.now()-started)} ms`,`Name: ${e?.name}`,`Message: ${e?.message}`,'',e?.name==='AbortError'?'Запрос не завершился за 20 секунд.':'Ошибка произошла до получения читаемого HTTP-ответа браузером.'].join('\n');
+  }finally{clearTimeout(timer)}
+}
+document.getElementById('chat').onclick=()=>{const t=Date.now();run('CHAT TRIGGER TEST',`${BASE}/webhook/e32deeb2-aebf-49f2-aabd-aa245542f2cd/chat`,{action:'sendMessage',chatInput:`DIAG-CHAT-${t} Привет`,sessionId:`diag-chat-${t}`,metadata:{source:'standalone-debug',origin:location.origin}})};
+document.getElementById('booking').onclick=()=>{const t=Date.now();run('BOOKING WEBHOOK TEST',`${BASE}/webhook/guest-house-booking`,{house_id:'',Название_дома:'',Имя_гостя:'DIAG',Телефон:'',Email_гостя:'',Дата_заезда:'',Дата_выезда:'',Количество_гостей:'',Комментарий:`DIAG-BOOKING-${t}`})};
+document.getElementById('copy').onclick=async()=>{try{await navigator.clipboard.writeText(out.textContent);document.getElementById('copy').textContent='Скопировано'}catch(e){document.getElementById('copy').textContent='Не удалось'}};
+</script>
+</main></body></html>
