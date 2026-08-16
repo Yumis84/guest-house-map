@@ -11,7 +11,7 @@ window.GUEST_HOUSES=[
 // Load the web-chat and booking integration after the base UI has initialized.
 (function(){
   const s=document.createElement('script');
-  s.src='guest-n8n-v1.js?v=1';
+  s.src='guest-n8n-v1.js?v=2';
   s.defer=true;
   document.head.appendChild(s);
 })();
