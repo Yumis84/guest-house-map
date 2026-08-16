@@ -39,4 +39,9 @@ window.GUEST_HOUSES=[
   gallery.src='guest-gallery-large-v7.js?v=7';
   gallery.defer=true;
   document.head.appendChild(gallery);
+
+  const swipe=document.createElement('script');
+  swipe.src='guest-sheet-swipe-v8.js?v=8';
+  swipe.defer=true;
+  document.head.appendChild(swipe);
 })();
