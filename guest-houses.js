@@ -10,38 +10,18 @@ window.GUEST_HOUSES=[
 
 // Load integrations/enhancements after the base data is available.
 (function(){
-  const s=document.createElement('script');
-  s.src='guest-n8n-v1.js?v=2';
-  s.defer=true;
-  document.head.appendChild(s);
+  const load=(src)=>{
+    const s=document.createElement('script');
+    s.src=src;
+    s.async=false;
+    document.head.appendChild(s);
+  };
 
-  const compact=document.createElement('script');
-  compact.src='guest-chat-compact-v3.js?v=3';
-  compact.defer=true;
-  document.head.appendChild(compact);
-
-  const photos=document.createElement('script');
-  photos.src='guest-photos-v4.js?v=4';
-  photos.defer=true;
-  document.head.appendChild(photos);
-
-  const ux=document.createElement('script');
-  ux.src='guest-final-ux-v5.js?v=5';
-  ux.defer=true;
-  document.head.appendChild(ux);
-
-  const mapFix=document.createElement('script');
-  mapFix.src='guest-map-fix-v6.js?v=6';
-  mapFix.defer=true;
-  document.head.appendChild(mapFix);
-
-  const gallery=document.createElement('script');
-  gallery.src='guest-gallery-large-v7.js?v=7';
-  gallery.defer=true;
-  document.head.appendChild(gallery);
-
-  const swipe=document.createElement('script');
-  swipe.src='guest-sheet-swipe-v8.js?v=8';
-  swipe.defer=true;
-  document.head.appendChild(swipe);
+  load('guest-n8n-v1.js?v=2');
+  load('guest-chat-compact-v3.js?v=3');
+  load('guest-photos-v4.js?v=4');
+  load('guest-final-ux-v5.js?v=5');
+  load('guest-map-fix-v6.js?v=6');
+  load('guest-gallery-large-v7.js?v=7');
+  load('guest-sheet-gesture-v9.js?v=9');
 })();
