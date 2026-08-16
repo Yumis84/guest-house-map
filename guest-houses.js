@@ -8,10 +8,15 @@ window.GUEST_HOUSES=[
   {id:'house_007',name:'Гостевой дом «Шельден»',address:'Калининградская область, Нестеровский район, пос. Сосновка, д. 9',capacity:16,price:null,amenities:['Санузел в каждом номере','Семейный номер','Кухня‑столовая','Терраса','Зал для мероприятий','Велосипеды','Квадроциклы','Байдарки','Берег озера','Животные по согласованию'],description:'Гостевой дом в заповедных лесах Роминтенской пущи на берегу озера. Три здания, номера с собственными санузлами и активный отдых.',active:true}
 ];
 
-// Load the web-chat and booking integration after the base UI has initialized.
+// Load the web-chat/booking integration and the compact sauna-style chat layout.
 (function(){
   const s=document.createElement('script');
   s.src='guest-n8n-v1.js?v=2';
   s.defer=true;
   document.head.appendChild(s);
+
+  const compact=document.createElement('script');
+  compact.src='guest-chat-compact-v3.js?v=3';
+  compact.defer=true;
+  document.head.appendChild(compact);
 })();
