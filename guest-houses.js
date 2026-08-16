@@ -24,4 +24,9 @@ window.GUEST_HOUSES=[
   photos.src='guest-photos-v4.js?v=4';
   photos.defer=true;
   document.head.appendChild(photos);
+
+  const ux=document.createElement('script');
+  ux.src='guest-final-ux-v5.js?v=5';
+  ux.defer=true;
+  document.head.appendChild(ux);
 })();
