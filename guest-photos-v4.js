@@ -232,7 +232,7 @@
     gallery.innerHTML=`<div class="gh-gallery-track">${slides}</div>${h.photos.length>1?'<button class="gh-gallery-nav gh-gallery-prev" type="button" aria-label="Предыдущее фото">‹</button><button class="gh-gallery-nav gh-gallery-next" type="button" aria-label="Следующее фото">›</button>':''}<div class="gh-gallery-dots">${h.photos.map((_,i)=>`<i class="gh-gallery-dot ${i===0?'on':''}"></i>`).join('')}</div><div class="gh-gallery-meta"><a class="gh-gallery-source" href="${esc(h.photoSourceUrl||'#')}" target="_blank" rel="noopener noreferrer">${esc(h.photoScope||h.photoSourceLabel||'Источник фото')}</a><span class="gh-gallery-count">1 / ${h.photos.length}</span></div>`;
     hero.insertBefore(gallery,hero.firstChild);
 
-    gallery.querySelectorAll('img').forEach(img=>{img.onerror=()=>img.classList.add('gh-photo-failed')});
+    gallery.querySelectorAll('img').forEach(img=>{img.onerror=()=>img.classList.add('gh-photo-failed');const fit=()=>img.classList.toggle('gh-portrait',img.naturalHeight>img.naturalWidth);img.addEventListener('load',fit);if(img.complete&&img.naturalWidth)fit()});
     const track=gallery.querySelector('.gh-gallery-track');
     const dots=[...gallery.querySelectorAll('.gh-gallery-dot')];
     const count=gallery.querySelector('.gh-gallery-count');
