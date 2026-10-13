@@ -6,6 +6,10 @@
   const style=document.createElement('style');
   style.id='guest-gallery-large-v7-style';
   style.textContent=`
+    /* Retired gesture handle must never appear over the photos. */
+    #detail .guest-sheet-drag-zone,
+    #detail .guest-sheet-drag-zone:before,
+    #detail .guest-sheet-drag-zone:after{display:none!important;visibility:hidden!important;width:0!important;height:0!important}
     /* Let the opened house sheet rise almost to the top of the screen. */
     #detail .sheet{
       max-height:calc(100dvh - 4px)!important;
