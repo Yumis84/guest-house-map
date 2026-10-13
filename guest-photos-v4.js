@@ -21,15 +21,19 @@
     },
     house_002:{
       sourceUrl:'https://wystynez.ru/p101.htm',
-      sourceLabel:'Виштынецкий экомузей',
+      sourceLabel:'Фотографии усадьбы Титова',
       images:[
-        'https://wystynez.ru/sc-pic/i0872.jpg',
-        'https://wystynez.ru/sc-pic/i0873.jpg',
-        'https://wystynez.ru/sc-pic/i0874.jpg',
-        'https://wystynez.ru/sc-pic/i0875.jpg',
-        'https://wystynez.ru/sc-pic/i0876.jpg',
-        'https://wystynez.ru/sc-pic/i0877.jpg',
-        'https://wystynez.ru/sc-pic/i0878.jpg'
+        'assets/titov/titov-01.webp',
+        'assets/titov/titov-02.webp',
+        'assets/titov/titov-03.webp',
+        'assets/titov/titov-04.webp',
+        'assets/titov/titov-05.webp',
+        'assets/titov/titov-06.webp',
+        'assets/titov/titov-07.webp',
+        'assets/titov/titov-08.webp',
+        'assets/titov/titov-09.webp',
+        'assets/titov/titov-10.webp',
+        'assets/titov/titov-11.webp'
       ]
     },
     house_003:{
