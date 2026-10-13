@@ -114,6 +114,13 @@
         return;
       }
 
+      // Until the backend tracks each physical unit, never send Point Krasnolesye
+      // category requests through the legacy house_id-only booking endpoint.
+      if (['house_004', 'house_005', 'house_006'].includes(chosen.id)) {
+        if (typeof toast === 'function') toast('Бронирование этого варианта пока недоступно. Уточните наличие у владельца.');
+        return;
+      }
+
       const checkin = document.getElementById('checkin').value;
       const checkout = document.getElementById('checkout').value;
       if (!checkin || !checkout || checkout <= checkin) {
