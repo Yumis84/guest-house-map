@@ -178,7 +178,7 @@
       .gh-gallery-track{display:flex;width:100%;height:100%;transition:transform .24s ease;will-change:transform}
       .gh-gallery-slide{min-width:100%;height:100%;position:relative;background:#18221e;display:grid;place-items:center;color:#a9b5af;font:700 12px system-ui}
       .gh-gallery-slide img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
-      .gh-gallery-slide img.gh-photo-failed{display:none}
+      .gh-gallery-slide img.gh-photo-failed{display:none}.gh-gallery-slide span{display:none}.gh-gallery-slide:has(img.gh-photo-failed) span{display:block;position:absolute;inset:0;display:grid;place-items:center;background:#111815;color:#a9b5af}
       .gh-gallery-nav{position:absolute;z-index:7;top:50%;transform:translateY(-50%);width:34px;height:42px;border:0;border-radius:12px;background:#09100db8;color:#fff;font:800 22px/1 system-ui;display:grid;place-items:center;backdrop-filter:blur(5px)}
       .gh-gallery-prev{left:10px}.gh-gallery-next{right:10px}
       .gh-gallery-meta{position:absolute;z-index:7;left:12px;right:12px;bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}
