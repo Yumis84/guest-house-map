@@ -19,7 +19,18 @@
 #sheet .gh-room-card button{display:block;width:100%;padding:11px;border:1px solid #f2a93b70;border-radius:11px;background:#f2a93b1c;color:#ffd17f;font-weight:600;text-align:center}
 #sheet .gh-room-note{font-size:12px;line-height:1.5;color:#a9b9af;margin:0}
 </style>
-<style>#sheet .gh-room-unit-list{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}#sheet .gh-room-unit-list span{font-size:12px;color:#d7e6dc;border:1px solid #ffffff22;border-radius:8px;padding:5px 7px}#sheet .gh-room-count{font-size:12px;color:#a9b9af;margin-bottom:9px}</style></head>
+<style>#sheet .gh-room-unit-list{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}#sheet .gh-room-unit-list span{font-size:12px;color:#d7e6dc;border:1px solid #ffffff22;border-radius:8px;padding:5px 7px}#sheet .gh-room-count{font-size:12px;color:#a9b9af;margin-bottom:9px}</style><style id="booking-mobile-fix">
+.modal{justify-content:center;align-items:flex-end;overflow:hidden}
+.modal .box{box-sizing:border-box;min-width:0;max-width:100%;max-height:calc(100dvh - 18px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:20px 16px max(22px,env(safe-area-inset-bottom));scrollbar-width:thin}
+.modal .box h2{margin:0 0 12px}
+.modal .box .muted{line-height:1.5;overflow-wrap:anywhere}
+.modal .form{grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-width:0}
+.modal .field{min-width:0}
+.modal .field input,.modal .field textarea{box-sizing:border-box;display:block;width:100%;max-width:100%;min-width:0;appearance:auto}
+.modal .field textarea{resize:vertical;min-height:70px}
+.modal .submit{width:100%;max-width:100%;min-width:0;white-space:normal;min-height:49px;height:auto;padding:12px}
+@media(max-width:430px){.modal .box{padding-left:16px;padding-right:16px}.modal .form{grid-template-columns:minmax(0,1fr)}.modal .field,.modal .full,.modal .submit{grid-column:1/-1}}
+</style></head>
 <body>
 <main id="app">
 <div id="map"></div>
