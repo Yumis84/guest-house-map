@@ -142,7 +142,7 @@
   let dragActive=false,dragStartY=0,dragLastY=0,dragAt=0,dragPointer=null;
   const detailOverlay=()=>document.getElementById('detail');
   const sheet=()=>document.getElementById('sheet');
-  function ensureDragHandle(){const s=sheet();if(!s||!s.children.length)return;if(!s.querySelector('.guest-sheet-drag-zone')){const h=document.createElement('button');h.type='button';h.className='guest-sheet-drag-zone';h.setAttribute('aria-label','Смахнуть карточку вниз, чтобы закрыть');s.prepend(h)}}
+  function ensureDragHandle(){const s=sheet();s?.querySelectorAll('.guest-sheet-drag-zone').forEach(el=>el.remove())}
   function closeSheet(){const d=detailOverlay(),s=sheet();if(!d||!s)return;s.classList.remove('guest-dragging');s.classList.add('guest-snapping');s.style.transform='translateY(110vh)';setTimeout(()=>{d.classList.remove('on');s.classList.remove('guest-snapping');s.style.transform='';s.style.opacity='';s.scrollTop=0},210)}
   function snapSheet(){const s=sheet();if(!s)return;s.classList.remove('guest-dragging');s.classList.add('guest-snapping');s.style.transform='translateY(0)';setTimeout(()=>s.classList.remove('guest-snapping'),230)}
   function onDragDown(e){const h=e.target.closest('.guest-sheet-drag-zone'),s=sheet(),d=detailOverlay();if(!h||!s||!d?.classList.contains('on'))return;if(s.scrollTop>2){s.scrollTo({top:0,behavior:'smooth'});return}dragActive=true;dragPointer=e.pointerId;dragStartY=dragLastY=e.clientY;dragAt=performance.now();s.classList.remove('guest-snapping');s.classList.add('guest-dragging');try{h.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault()}
