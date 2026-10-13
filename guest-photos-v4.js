@@ -54,9 +54,9 @@
           sourceUrl:'https://tochkakrasnolesye.tilda.ws/',
       sourceLabel:'Фотографии комплекса «Точка»',
       images:[
+        'assets/tochka/tochka-03.webp',
         'assets/tochka/tochka-01.webp',
         'assets/tochka/tochka-02.webp',
-        'assets/tochka/tochka-03.webp',
         'assets/tochka/tochka-04.webp',
         'assets/tochka/tochka-05.webp',
         'assets/tochka/tochka-06.webp',
@@ -70,9 +70,9 @@
           sourceUrl:'https://tochkakrasnolesye.tilda.ws/',
       sourceLabel:'Фотографии комплекса «Точка»',
       images:[
+        'assets/tochka/tochka-03.webp',
         'assets/tochka/tochka-01.webp',
         'assets/tochka/tochka-02.webp',
-        'assets/tochka/tochka-03.webp',
         'assets/tochka/tochka-04.webp',
         'assets/tochka/tochka-05.webp',
         'assets/tochka/tochka-06.webp',
@@ -86,9 +86,9 @@
           sourceUrl:'https://tochkakrasnolesye.tilda.ws/',
       sourceLabel:'Фотографии комплекса «Точка»',
       images:[
+        'assets/tochka/tochka-03.webp',
         'assets/tochka/tochka-01.webp',
         'assets/tochka/tochka-02.webp',
-        'assets/tochka/tochka-03.webp',
         'assets/tochka/tochka-04.webp',
         'assets/tochka/tochka-05.webp',
         'assets/tochka/tochka-06.webp',
@@ -102,9 +102,9 @@
           sourceUrl:'https://vk.ru/sheldenhotel',
       sourceLabel:'Фотографии «Шельден»',
       images:[
+        'assets/shelden/shelden-03.webp',
         'assets/shelden/shelden-01.webp',
         'assets/shelden/shelden-02.webp',
-        'assets/shelden/shelden-03.webp',
         'assets/shelden/shelden-04.webp',
         'assets/shelden/shelden-05.webp',
         'assets/shelden/shelden-06.webp',
@@ -122,11 +122,11 @@
           sourceUrl:'http://puscha.tilda.ws/',
       sourceLabel:'Фотографии эко-комплекса «Пуща»',
       images:[
+        'assets/puscha/puscha-05.webp',
         'assets/puscha/puscha-01.webp',
         'assets/puscha/puscha-02.webp',
         'assets/puscha/puscha-03.webp',
         'assets/puscha/puscha-04.webp',
-        'assets/puscha/puscha-05.webp',
         'assets/puscha/puscha-06.webp',
         'assets/puscha/puscha-07.webp'
       ]
