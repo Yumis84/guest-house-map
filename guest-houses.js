@@ -25,7 +25,7 @@ window.GUEST_HOUSES=[
   load('guest-photos-v4.js?v=20261013-photo5');
   load('guest-final-ux-v5.js?v=20261013-nohandle1');
   load('guest-map-fix-v6.js?v=6');
-  load('guest-gallery-large-v7.js?v=20261013-photo5');
+  load('guest-gallery-large-v7.js?v=20261013-nohandle2');
   // v11 replaces the experimental v8-v10 gesture layers with the proven sauna-style behavior.
   load('guest-sauna-swipe-v11.js?v=11');
   // Final sauna parity: SVG hearts in favorites/catalog.
