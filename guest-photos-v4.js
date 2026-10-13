@@ -51,39 +51,100 @@
       ]
     },
     house_004:{
-      sourceUrl:'https://tochkakrasnolesye.tilda.ws/homes',
-      sourceLabel:'Точка Краснолесье / экомузей',
+          sourceUrl:'https://tochkakrasnolesye.tilda.ws/',
+      sourceLabel:'Фотографии комплекса «Точка»',
       images:[
-        'https://wystynez.ru/sc-pic/i2273.jpg',
-        'https://wystynez.ru/sc-pic/i2274.jpg',
-        'https://wystynez.ru/sc-pic/i2275.jpg',
-        'https://wystynez.ru/sc-pic/i2276.jpg',
-        'https://wystynez.ru/sc-pic/i2277.jpg'
+        'assets/tochka/tochka-01.webp',
+        'assets/tochka/tochka-02.webp',
+        'assets/tochka/tochka-03.webp',
+        'assets/tochka/tochka-04.webp',
+        'assets/tochka/tochka-05.webp',
+        'assets/tochka/tochka-06.webp',
+        'assets/tochka/tochka-07.webp',
+        'assets/tochka/tochka-08.webp',
+        'assets/tochka/tochka-09.webp',
+        'assets/tochka/tochka-10.webp'
       ]
     },
     house_005:{
-      sourceUrl:'https://tochkakrasnolesye.tilda.ws/roomcomfort',
-      sourceLabel:'Фото комплекса «Точка»',
-      scope:'Фото комплекса',
+          sourceUrl:'https://tochkakrasnolesye.tilda.ws/',
+      sourceLabel:'Фотографии комплекса «Точка»',
       images:[
-        'https://wystynez.ru/sc-pic/i2273.jpg',
-        'https://wystynez.ru/sc-pic/i2274.jpg'
+        'assets/tochka/tochka-01.webp',
+        'assets/tochka/tochka-02.webp',
+        'assets/tochka/tochka-03.webp',
+        'assets/tochka/tochka-04.webp',
+        'assets/tochka/tochka-05.webp',
+        'assets/tochka/tochka-06.webp',
+        'assets/tochka/tochka-07.webp',
+        'assets/tochka/tochka-08.webp',
+        'assets/tochka/tochka-09.webp',
+        'assets/tochka/tochka-10.webp'
       ]
     },
     house_006:{
-      sourceUrl:'https://tochkakrasnolesye.tilda.ws/roomfor2',
-      sourceLabel:'Фото комплекса «Точка»',
-      scope:'Фото комплекса',
+          sourceUrl:'https://tochkakrasnolesye.tilda.ws/',
+      sourceLabel:'Фотографии комплекса «Точка»',
       images:[
-        'https://wystynez.ru/sc-pic/i2275.jpg',
-        'https://wystynez.ru/sc-pic/i2276.jpg'
+        'assets/tochka/tochka-01.webp',
+        'assets/tochka/tochka-02.webp',
+        'assets/tochka/tochka-03.webp',
+        'assets/tochka/tochka-04.webp',
+        'assets/tochka/tochka-05.webp',
+        'assets/tochka/tochka-06.webp',
+        'assets/tochka/tochka-07.webp',
+        'assets/tochka/tochka-08.webp',
+        'assets/tochka/tochka-09.webp',
+        'assets/tochka/tochka-10.webp'
       ]
     },
     house_007:{
-      sourceUrl:'https://visit-kaliningrad.ru/accommodation/shelden/',
-      sourceLabel:'Инфоцентр туризма Калининградской области',
+          sourceUrl:'https://vk.ru/sheldenhotel',
+      sourceLabel:'Фотографии «Шельден»',
       images:[
-        'https://visit-kaliningrad.ru/upload/iblock/2d1/itkmlty6.jpg'
+        'assets/shelden/shelden-01.webp',
+        'assets/shelden/shelden-02.webp',
+        'assets/shelden/shelden-03.webp',
+        'assets/shelden/shelden-04.webp',
+        'assets/shelden/shelden-05.webp',
+        'assets/shelden/shelden-06.webp',
+        'assets/shelden/shelden-07.webp',
+        'assets/shelden/shelden-08.webp',
+        'assets/shelden/shelden-09.webp',
+        'assets/shelden/shelden-10.webp',
+        'assets/shelden/shelden-11.webp',
+        'assets/shelden/shelden-12.webp',
+        'assets/shelden/shelden-13.webp',
+        'assets/shelden/shelden-14.webp'
+      ]
+    },
+    house_008:{
+          sourceUrl:'http://puscha.tilda.ws/',
+      sourceLabel:'Фотографии эко-комплекса «Пуща»',
+      images:[
+        'assets/puscha/puscha-01.webp',
+        'assets/puscha/puscha-02.webp',
+        'assets/puscha/puscha-03.webp',
+        'assets/puscha/puscha-04.webp',
+        'assets/puscha/puscha-05.webp',
+        'assets/puscha/puscha-06.webp',
+        'assets/puscha/puscha-07.webp'
+      ]
+    },
+    house_009:{
+          sourceUrl:'http://www.usadbazaeca.ru/',
+      sourceLabel:'Фотографии «Усадьбы Заеца»',
+      images:[
+        'assets/zaec/zaec-01.webp',
+        'assets/zaec/zaec-02.webp',
+        'assets/zaec/zaec-03.webp',
+        'assets/zaec/zaec-04.webp',
+        'assets/zaec/zaec-05.webp',
+        'assets/zaec/zaec-06.webp',
+        'assets/zaec/zaec-07.webp',
+        'assets/zaec/zaec-08.webp',
+        'assets/zaec/zaec-09.webp',
+        'assets/zaec/zaec-10.webp'
       ]
     }
   };
