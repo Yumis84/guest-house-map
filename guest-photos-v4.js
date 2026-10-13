@@ -40,14 +40,14 @@
       sourceUrl:'https://rominta.ru/',
       sourceLabel:'Фотографии Rominta Guest House',
       images:[
-        'assets/rominta/rominta-01.webp',
         'assets/rominta/rominta-02.webp',
-        'assets/rominta/rominta-03.webp',
         'assets/rominta/rominta-04.webp',
         'assets/rominta/rominta-05.webp',
         'assets/rominta/rominta-06.webp',
         'assets/rominta/rominta-07.webp',
-        'assets/rominta/rominta-08.webp'
+        'assets/rominta/rominta-03.webp',
+        'assets/rominta/rominta-08.webp',
+        'assets/rominta/rominta-01.webp'
       ]
     },
     house_004:{
