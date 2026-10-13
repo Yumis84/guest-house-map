@@ -47,6 +47,7 @@
         'assets/rominta/rominta-07.webp',
         'assets/rominta/rominta-03.webp',
         'assets/rominta/rominta-08.webp',
+        'assets/rominta/rominta-contact.webp',
       ]
     },
     house_004:{
