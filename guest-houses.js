@@ -21,7 +21,7 @@ window.GUEST_HOUSES=[
   };
 
   load('guest-n8n-v1.js?v=2');
-  load('guest-chat-compact-v3.js?v=3');
+  load('guest-chat-compact-v3.js?v=20261013-bubble1');
   load('guest-photos-v4.js?v=20261013-photo5');
   load('guest-final-ux-v5.js?v=20261013-nohandle1');
   load('guest-map-fix-v6.js?v=6');
