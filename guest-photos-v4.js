@@ -5,14 +5,18 @@
 
   const SOURCES={
     house_001:{
-      sourceUrl:'https://wystynez.ru/p101.htm',
-      sourceLabel:'Виштынецкий экомузей',
+      sourceUrl:'https://rominten.ru/',
+      sourceLabel:'Материалы гостевого дома «У Степана»',
       images:[
-        'https://wystynez.ru/sc-pic/i2266.jpg',
-        'https://wystynez.ru/sc-pic/i2278.jpg',
-        'https://wystynez.ru/sc-pic/i2270.jpg',
-        'https://wystynez.ru/sc-pic/i2269.jpg',
-        'https://wystynez.ru/sc-pic/i2271.jpg'
+        'assets/stepan/stepan-01.webp',
+        'assets/stepan/stepan-02.webp',
+        'assets/stepan/stepan-03.webp',
+        'assets/stepan/stepan-04.webp',
+        'assets/stepan/stepan-05.webp',
+        'assets/stepan/stepan-06.webp',
+        'assets/stepan/stepan-07.webp',
+        'assets/stepan/stepan-08.webp',
+        'assets/stepan/stepan-09.webp'
       ]
     },
     house_002:{
