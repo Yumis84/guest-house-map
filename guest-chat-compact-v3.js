@@ -108,6 +108,19 @@
       box-shadow:0 5px 16px #0002!important;
     }
 
+    /* Outgoing messages should hug their text, not stretch across the chat. */
+    #chatHost .chat-message.chat-message-from-user,
+    #chatHost .chat-message-from-user.chat-message,
+    #chatHost .chat-message--user{
+      width:max-content!important;
+      max-width:50%!important;
+      min-width:0!important;
+      margin-left:auto!important;
+      margin-right:0!important;
+      overflow-wrap:anywhere!important;
+      white-space:normal!important;
+    }
+
     #chatHost .chat-messages-list{
       padding:12px 10px 14px!important;
     }
