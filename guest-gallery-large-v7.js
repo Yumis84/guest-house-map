@@ -19,7 +19,7 @@
       background:#070b09!important;
     }
 
-    /* Keep the complete source photo visible instead of cropping it. */
+    /* Fill the photo hero for landscape photos; preserve full portrait images. */
     #detail .gh-gallery-slide{
       background:#070b09!important;
       overflow:hidden!important;
@@ -27,10 +27,12 @@
     #detail .gh-gallery-slide img{
       width:100%!important;
       height:100%!important;
-      object-fit:contain!important;
+      object-fit:cover!important;
       object-position:center center!important;
       background:#070b09!important;
     }
+
+    #detail .gh-gallery-slide img.gh-portrait{object-fit:contain!important}
 
     /* The old gradient covered too much of the enlarged photo. */
     #detail .hero.gh-photo-hero:after{
