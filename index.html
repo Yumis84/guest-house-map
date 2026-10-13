@@ -25,7 +25,7 @@
 <div class="toast" id="toast"></div>
 </main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="guest-houses.js?v=20261013-price2"></script>
+<script src="guest-houses.js?v=20261013-titov1"></script>
 <script>
 const houses=(window.GUEST_HOUSES||[]).filter(x=>x.active!==false),$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const favs=new Set(JSON.parse(localStorage.getItem('rominta_favs')||'[]')),bookings=JSON.parse(localStorage.getItem('rominta_bookings')||'[]');let chosen=null,active='Все',map,markers={};
@@ -47,6 +47,6 @@ if(window.L){map=L.map('map',{zoomControl:false}).setView([54.96,22.42],11);L.ti
 const geo=JSON.parse(localStorage.getItem('rominta_geo')||'{}');function markerIcon(){return L.divIcon({className:'',html:'<div style="width:40px;height:40px;border-radius:14px;background:#111815;border:2px solid #f2a93b;display:grid;place-items:center;color:#f2a93b;font-size:21px">⌂</div>',iconSize:[40,40],iconAnchor:[20,20]})}function addMarker(h){if(!window.L||!h.lat||markers[h.id])return;const m=L.marker([h.lat,h.lng],{icon:markerIcon()}).addTo(map);m.on('click',()=>openHouse(h.id));markers[h.id]=m}houses.forEach(h=>{if(geo[h.address]){h.lat=geo[h.address][0];h.lng=geo[h.address][1];addMarker(h)}});async function geocode(){for(const h of houses){if(h.lat)continue;try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ru&q=${encodeURIComponent(h.address)}`),a=await r.json();if(a[0]){h.lat=+a[0].lat;h.lng=+a[0].lon;geo[h.address]=[h.lat,h.lng];localStorage.setItem('rominta_geo',JSON.stringify(geo));addMarker(h)}}catch(_){}await new Promise(r=>setTimeout(r,1100))}}function syncMarkers(){if(!map)return;const ids=new Set(filtered().map(h=>h.id));Object.entries(markers).forEach(([id,m])=>ids.has(id)?m.addTo(map):map.removeLayer(m))}setTimeout(geocode,500);
 $('#startChat').onclick=()=>toast('Нужен webhook URL готового n8n workflow гостевых домов');render();renderBookings();
 </script>
-<script src="guest-photos-v4.js?v=20261013"></script>
+<script src="guest-photos-v4.js?v=20261013-titov1"></script>
 </body>
 </html>
