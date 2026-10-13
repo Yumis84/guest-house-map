@@ -37,16 +37,17 @@
       ]
     },
     house_003:{
-      sourceUrl:'https://wystynez.ru/p101.htm',
-      sourceLabel:'Виштынецкий экомузей',
+      sourceUrl:'https://rominta.ru/',
+      sourceLabel:'Фотографии Rominta Guest House',
       images:[
-        'https://wystynez.ru/sc-pic/i0880.jpg',
-        'https://wystynez.ru/sc-pic/i0881.jpg',
-        'https://wystynez.ru/sc-pic/i0882.jpg',
-        'https://wystynez.ru/sc-pic/i0883.jpg',
-        'https://wystynez.ru/sc-pic/i0884.jpg',
-        'https://wystynez.ru/sc-pic/i0885.jpg',
-        'https://wystynez.ru/sc-pic/i0886.jpg'
+        'assets/rominta/rominta-01.webp',
+        'assets/rominta/rominta-02.webp',
+        'assets/rominta/rominta-03.webp',
+        'assets/rominta/rominta-04.webp',
+        'assets/rominta/rominta-05.webp',
+        'assets/rominta/rominta-06.webp',
+        'assets/rominta/rominta-07.webp',
+        'assets/rominta/rominta-08.webp'
       ]
     },
     house_004:{
