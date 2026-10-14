@@ -1,0 +1,46 @@
+name: Direct guest-house links
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - '.github/workflows/direct-house-links.yml'
+  workflow_dispatch:
+jobs:
+  deep-link:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Verify direct links in Chromium
+        shell: bash
+        run: |
+          python3 -m http.server 8766 --bind 127.0.0.1 >/tmp/guest-preview.log 2>&1 &
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            try{
+              for(const viewport of [{width:390,height:844},{width:1366,height:900}]){
+                const page=await browser.newPage({viewport});
+                await page.goto('http://127.0.0.1:8766/?house=house_001',{waitUntil:'domcontentloaded'});
+                await page.locator('#detail.on').waitFor({timeout:15000});
+                const name=await page.locator('#detail h2').first().textContent();
+                if(!name?.trim())throw Error('House detail title is empty');
+                console.log('PASS',viewport.width,'direct link opens:',name);
+                await page.close();
+              }
+              const page=await browser.newPage();
+              await page.goto('http://127.0.0.1:8766/?house=unknown',{waitUntil:'domcontentloaded'});
+              if(await page.locator('#detail.on').count())throw Error('Unknown house must not open detail');
+              console.log('PASS unknown house stays in catalog');
+              await page.close();
+            }finally{await browser.close()}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
