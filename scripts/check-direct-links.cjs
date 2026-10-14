@@ -4,6 +4,8 @@ const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const data=fs.readFileSync('guest-houses.js','utf8');
 const houses=vm.runInNewContext('('+data.match(/window\.GUEST_HOUSES\s*=\s*(\[[\s\S]*?\]);/)[1]+')').filter(h=>h.active!==false);
+const photoText=fs.readFileSync('guest-photos-v4.js','utf8');
+const covers=vm.runInNewContext('('+photoText.match(/const\s+SOURCES\s*=\s*({[\s\S]*?});/)[1]+')');
 const site=process.env.PREVIEW_URL||'http://127.0.0.1:8766/';
 const dir='/tmp/direct-link-artifacts';fs.mkdirSync(dir,{recursive:true});
 (async()=>{
@@ -17,15 +19,23 @@ const dir='/tmp/direct-link-artifacts';fs.mkdirSync(dir,{recursive:true});
     await page.locator('#detail.on').waitFor();
     assert.equal((await page.locator('#detail h2').first().textContent()).trim(),h.name);
     await page.waitForFunction(()=>{const img=document.querySelector('#detail .gh-gallery-slide img');return img?.complete&&img.naturalWidth>0});
+    assert.equal(await page.locator('#detail .gh-gallery-slide img').first().getAttribute('src'),covers[h.id].images[0]);
     if(h.parentId){
       await page.locator('#roomBack').click();
       assert.equal((await page.locator('#detail h2').first().textContent()).trim(),houses.find(p=>p.id===h.parentId).name);
     }
     if(h.id==='house_004'){
-      await page.locator('[data-room="house_005"]').first().click();
-      assert.equal((await page.locator('#detail h2').first().textContent()).trim(),houses.find(p=>p.id==='house_005').name);
+      for(const [unit,id] of [['comfort','house_005'],['double','house_006']]){
+        await page.locator(`[data-unit="${unit}"]`).click();
+        assert.equal((await page.locator('#detail h2').first().textContent()).trim(),houses.find(p=>p.id===id).name);
+        await page.locator('#roomBack').click();
+        assert.equal((await page.locator('#detail h2').first().textContent()).trim(),h.name);
+      }
+      await page.locator('[data-unit="aframe"]').click();
+      assert.equal(await page.locator('.gh-room-options h3').textContent(),'A-frame домики');
       await page.locator('#roomBack').click();
-      assert.equal((await page.locator('#detail h2').first().textContent()).trim(),h.name);
+      await page.locator('.gh-services-fold summary').click();
+      assert.equal(await page.locator('.gh-service-line').count(),3);
     }
     await page.screenshot({path:`${dir}/catalog-${viewport.width}-${h.id}.png`});
     assert.deepEqual(errors,[]);
