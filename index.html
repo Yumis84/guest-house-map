@@ -11,6 +11,7 @@
 
 /* Compact nested accommodation UI */
 .gh-compact-list{display:grid;gap:9px;margin:14px 0 20px}.gh-compact-item{width:100%;border:1px solid #34483f;border-radius:16px;background:#192721;color:#f4f7f5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:17px 14px;text-align:left;min-height:76px}.gh-compact-name{font-size:16px;font-weight:700}.gh-compact-name small{display:block;font-size:12px;font-weight:400;color:#a9b5af;margin-top:6px}.gh-compact-right{display:flex;align-items:center;gap:10px;font-size:12px;color:#c4cdc8;text-align:right;max-width:42%}.gh-compact-right b{font-size:30px;color:#f2a93b;font-weight:400}.gh-services-fold{border-top:1px solid #34483f;margin-top:16px;padding:17px 0}.gh-services-fold summary{cursor:pointer;list-style:none;font-weight:700;font-size:16px;display:flex;flex-direction:column;gap:7px}.gh-services-fold summary::-webkit-details-marker{display:none}.gh-services-fold summary:after{content:'⌄';float:right;position:absolute;right:38px;color:#f2a93b}.gh-services-fold[open] summary:after{content:'⌃'}.gh-services-fold summary span{font-size:12px;color:#a9b5af;font-weight:400}.gh-service-list{margin-top:15px;display:grid;gap:14px}.gh-service-line{border-bottom:1px solid #28362f;padding:8px 0 14px;display:grid;gap:5px}.gh-service-line small{color:#a9b5af;font-size:13px;line-height:1.5}.gh-back-link{background:#1c3027!important;border:1px solid #49624f!important;color:#e9f3eb!important;border-radius:12px!important;min-height:44px;padding:10px 16px!important;margin-bottom:16px;font-weight:600;display:inline-flex;align-items:center}
+.gh-unit-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#a9b5af;margin:8px 0}.gh-unit-view h3{font-size:22px;margin:10px 0}.gh-unit-facts{color:#f2a93b;font-weight:600}.gh-unit-physical{background:#192721;border:1px solid #34483f;border-radius:14px;padding:14px;margin-top:18px}.gh-unit-physical p{color:#a9b5af;line-height:1.5}.gh-unit-numbers{display:flex;gap:8px;flex-wrap:wrap}.gh-unit-numbers span{background:#283d32;border-radius:10px;padding:9px 12px;color:#e7f2eb}.gh-unit-view{padding-bottom:16px}
 </style>
 <style id="gh-point-room-cards">
 #sheet .gh-room-cards{display:grid;gap:11px;margin:20px 0}
@@ -54,7 +55,22 @@ function renderPropertyInventory(h){
 const inventory=window.GUEST_INVENTORY?.[h.id];if(!inventory)return;
 const root=document.querySelector('#sheet .gh-room-options');if(!root)return;
 root.innerHTML='<h3>Варианты размещения</h3><div class="gh-compact-list">'+inventory.units.map(u=>'<button type="button" class="gh-compact-item" data-unit="'+u.id+'"><span class="gh-compact-name">'+u.name+'<small>'+u.capacityLabel+'</small></span><span class="gh-compact-right">'+(u.quantity===null?'Количество уточняется':u.quantity+' '+(u.type==='room'?'номера':'домика'))+' <b>›</b></span></button>').join('')+'</div><details class="gh-services-fold"><summary>Дополнительные услуги <span>Баня · бассейн · чан</span></summary><div class="gh-service-list">'+inventory.services.map(x=>'<div class="gh-service-line"><b>'+x.name+'</b><small>'+x.description+'</small></div>').join('')+'</div></details>';
-root.querySelectorAll('[data-unit]').forEach(btn=>btn.onclick=()=>{const u=inventory.units.find(x=>x.id===btn.dataset.unit);if(!u)return;if(u.houseId!==h.id){openHouse(u.houseId);return}openAframeDetails(h)});
+root.querySelectorAll('[data-unit]').forEach(btn=>btn.onclick=()=>{const u=inventory.units.find(x=>x.id===btn.dataset.unit);if(!u)return;openUnitDetails(h,u)});
+}
+function openUnitDetails(parent,u){
+const root=document.querySelector('#sheet .gh-room-options');if(!root)return;
+const heading=u.name;
+const capacity=u.capacityLabel||'Параметры уточняются';
+const count=u.quantity===null?'Количество уточняется':u.quantity+' '+(u.type==='room'?'номера':'домика');
+root.innerHTML='<div class="gh-unit-view"><div class="gh-unit-kicker">Вариант размещения</div><h3>'+heading+'</h3><p class="gh-unit-facts">'+count+' · '+capacity+'</p><p>'+u.description+'</p>'+(u.quantity>1?'<div class="gh-unit-physical"><b>Отдельные единицы размещения</b><p>Каждый домик учитывается отдельно. Конкретный номер и свободные даты подтверждаются владельцем.</p><div class="gh-unit-numbers">'+Array.from({length:u.quantity},(_,i)=>'<span>'+u.name.replace(' домики','')+' №'+(i+1)+'</span>').join('')+'</div></div>':'<p class="gh-room-note">Наличие, фотографии конкретного номера и стоимость уточняются у владельца.</p>')+'</div>';
+const detail=document.querySelector('#sheet .detail');
+if(!detail)return;
+let back=detail.querySelector('#roomBack');
+if(!back){back=document.createElement('button');back.id='roomBack';detail.insertBefore(back,detail.firstChild)}
+styleRoomBack(parent.id);
+const book=detail.querySelector('#book');
+if(book){book.textContent='Уточнить размещение';book.onclick=()=>{openBooking(parent);const label=document.querySelector('#bookName');if(label)label.textContent=parent.name+' · '+heading+' · наличие уточняется';};}
+root.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function styleRoomBack(parentId){
 const sheet=document.querySelector('#sheet');if(!sheet)return;
