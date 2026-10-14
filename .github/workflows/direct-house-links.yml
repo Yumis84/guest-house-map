@@ -1,0 +1,35 @@
+name: Direct guest-house links
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'guest-houses.js'
+      - 'guest-photos-v4.js'
+      - 'scripts/check-direct-links.cjs'
+      - '.github/workflows/direct-house-links.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deep-link:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Verify direct links in Chromium
+        shell: bash
+        run: |
+          python3 -m http.server 8766 --bind 127.0.0.1 >/tmp/guest-preview.log 2>&1 &
+          node scripts/check-direct-links.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: direct-link-screenshots
+          path: /tmp/direct-link-artifacts
