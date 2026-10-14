@@ -96,7 +96,8 @@ function openLinkedHouse(){
   const id=new URLSearchParams(window.location.search).get('house');
   if(id && (window.GUEST_HOUSES||[]).some(h=>h.id===id&&h.active!==false))openHouse(id);
 }
-openLinkedHouse();
+// Photo enhancements install on load; open after their listeners finish.
+window.addEventListener('load',()=>requestAnimationFrame(openLinkedHouse),{once:true});
 </script>
 <script src="guest-photos-v4.js?v=20261013-photo5"></script>
 </body>
