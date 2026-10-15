@@ -18,7 +18,7 @@ else {
   else{
    signout.style.display='inline-block';
    signout.onclick=async()=>{await supabase.auth.signOut();location.replace('./login.html');};
-   const {data:memberships,error:membershipError}=await supabase.from('company_members').select('company_id,role').eq('user_id',user.id);
+   const {data:memberships,error:membershipError}=await supabase.from('company_members').select('company_id,member_role').eq('user_id',user.id);
    if(membershipError){show('Нет доступа к списку компаний','Права на чтение членства ещё не настроены. Доступ к объектам закрыт.',true);}
    else if(!memberships?.length){show('Доступ к объектам пока не выдан','Учётная запись создана, но администратор ещё не привязал её к компании.');}
    else{
