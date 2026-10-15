@@ -41,7 +41,7 @@
 <div id="map"></div>
 <header class="top" id="mapTop"><div class="search"><input id="q" placeholder="Название, Краснолесье, баня, бассейн…"></div><div class="chips" id="chips"></div></header>
 <div class="cards" id="cards"></div>
-<section class="screen" id="catalog"><div class="head"><h1>Гостевые дома</h1><span class="badge" id="count"></span></div><div class="list" id="list"></div></section>
+<section class="screen" id="catalog"><div class="head"><h1>Гостевые дома</h1><a href="login.html" style="color:#ffd37f;text-decoration:none;border:1px solid #34483f;border-radius:12px;padding:10px 12px;background:#18221e">Войти</a></div><label for="catalogLocality" style="display:block;color:#a9b5af;margin:10px 0 6px">Населённый пункт</label><select id="catalogLocality" style="width:100%;background:#18221e;color:#f4f7f5;border:1px solid #34483f;border-radius:12px;padding:12px;margin-bottom:12px"><option value="">Все населённые пункты</option></select><div class="badge" id="count" style="display:inline-block;margin-bottom:10px"></div><div class="list" id="list"></div></section>
 <section class="screen" id="favorites"><div class="head"><h1>Избранное</h1><span class="badge" id="favCount"></span></div><div class="list" id="favList"></div></section>
 <section class="screen" id="assistant"><div class="head"><h1>AI‑помощник</h1></div><div class="assistant-card"><h2>Подбор и бронирование</h2><p>Помощник сможет подобрать дом по датам, числу гостей и пожеланиям, проверить доступность через n8n и оформить бронь.</p><button id="startChat">Открыть помощника</button></div><div class="chat-host" id="chatHost"><div class="chat-placeholder"><b>Workflow пока не подключён к этой копии</b>Интерфейс готов. Для запуска нужен webhook URL готового n8n workflow гостевых домов.</div></div></section>
 <section class="screen" id="bookings"><div class="head"><h1>Мои брони</h1></div><div id="bookingList"></div></section>
@@ -121,5 +121,15 @@ const geo=JSON.parse(localStorage.getItem('rominta_geo')||'{}');function markerI
 $('#startChat').onclick=()=>toast('Нужен webhook URL готового n8n workflow гостевых домов');render();renderBookings();
 </script>
 <script src="guest-photos-v4.js?v=20261013-photo5"></script>
-</body>
+<script>
+(function(){
+ const select=document.getElementById('catalogLocality');
+ const values=['Краснолесье','Дмитриевка','Сосновка','Чистые Пруды'];
+ for(const value of values){const option=document.createElement('option');option.value=value;option.textContent=value;select.append(option);}
+ const list=document.getElementById('list');
+ function apply(){const value=select.value.toLocaleLowerCase('ru');for(const item of list.children){const text=item.textContent.toLocaleLowerCase('ru');item.hidden=!!value&&!text.includes(value);}}
+ select.addEventListener('change',apply);
+ new MutationObserver(apply).observe(list,{childList:true});
+})();
+</script></body>
 </html>
