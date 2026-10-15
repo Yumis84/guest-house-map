@@ -1,18 +1,16 @@
-# Owner Cabinet V1: rollout and security gates
+# Owner Cabinet V1 — implementation and remaining rollout
 
-## Implemented on feature/owner-login-shell-v1
-- `login.html`: email/password sign-in and sign-up shell, disabled until configured.
-- `owner.html`: guarded dashboard shell, read-only list of company properties; redirect unauthenticated users to login.
-- `supabase-public-config.js`: shared public URL and publishable/anon key placeholders. Never use service-role/secret keys.
-- Catalog link and locality filter (PR #7).
+Implemented in `feature/owner-login-shell-v1`, Draft PR [#7](https://github.com/Yumis84/guest-house-map/pull/7), Issue [#8](https://github.com/Yumis84/guest-house-map/issues/8).
 
-## Not yet completed
-1. Confirm actual Supabase schema for `company_members` and `properties` (column names, types, RLS). Current UI assumes `company_members(user_id,company_id,role)` and `properties(id,name,published,company_id)`; adjust based on verified schema before activation.
-2. Configure Supabase Auth email/password, email confirmation, recovery URLs, allowed origins, and public configuration.
-3. Verify that membership cannot be self-granted and RLS restricts company properties to authorized members. Test owner A versus owner B using actual authenticated sessions. Client-side company filtering alone is NOT a security boundary.
-4. Create initial verified company membership using privileged admin workflow, not browser writes.
-5. Add secure property edit forms and image uploads with RLS/storage policies.
-6. Browser smoke tests: mobile, login, logout, session expiration, no-membership, unauthorized property ID, locality filters.
-7. Keep PR draft until security acceptance and deployment approval. Do not enable booking or inventory mutation.
+- Shared pinned, locally served Supabase SDK and public-only configuration validator.
+- Password sign-in, registration with confirmation guidance, PKCE recovery, password change, local sign-out; invalid-session, cross-tab and back-cache handling.
+- Company-scoped dashboard; no-membership, no-properties, denied-access and missing-migration states.
+- Owner/admin/manager edit name, description, contacts and published status; viewer can inspect.
+- Column allowlist, database RLS, optimistic revision check, safe text rendering and unsaved-change prompts.
+- Private photo list, signed preview, validated/re-encoded upload and confirmed deletion.
+- Exact locality parsing with options derived from the real catalog and synchronized map markers.
+- Local PostgreSQL policy tests, browser fixtures, optional loopback-only real JWT runner and GitHub Actions CI.
 
-Tracking: GitHub Issue #8, Draft PR #7. Hub Project Space guest-house-map is separate from Eduard's guest-house-booking space.
+The shared config intentionally remains empty. This prevents accidental connection of an unfinished deployment to the working database. No hosted Auth configuration, memberships or migrations were changed.
+
+See [security acceptance and rollout gates](owner-cabinet-rls-acceptance.md) and [execution report](owner-cabinet-report.md). Full-stack acceptance and deployment remain blocked; this is not a production-ready sign-off.
