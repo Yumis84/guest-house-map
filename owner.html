@@ -4,7 +4,7 @@
 <body><header><a href="./">← К каталогу</a><button id="signout" type="button">Выйти</button></header>
 <main><h1>Личный кабинет владельца</h1><p class="muted">Здесь будут отображаться только объекты, к которым у вашей учётной записи есть доступ.</p>
 <section class="panel" aria-live="polite"><h2 id="heading">Проверяем доступ…</h2><p id="message" class="muted">Подключение к системе авторизации.</p><div id="properties"></div></section></main>
-<script type="module">
+<script src="./supabase-public-config.js"></script><script type="module">
 const heading=document.querySelector('#heading'),message=document.querySelector('#message'),properties=document.querySelector('#properties'),signout=document.querySelector('#signout');
 function show(title,text,isError=false){heading.textContent=title;message.textContent=text;message.className=isError?'error':'muted';}
 const config=window.GUEST_HOUSE_SUPABASE_CONFIG;
