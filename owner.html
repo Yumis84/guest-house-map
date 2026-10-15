@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Личный кабинет · Гостевые дома</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0c1411;color:#f5f8f6;font:16px system-ui,Arial}header{padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #34473b}a{color:#f6c67a}button{border:0;border-radius:10px;background:#e9b65e;color:#21170a;padding:11px 16px;font:inherit;cursor:pointer}main{max-width:920px;margin:auto;padding:24px}h1{font-size:clamp(25px,4vw,36px)}.muted{color:#aabcb0}.panel{background:#1a2921;border:1px solid #344b3d;border-radius:18px;padding:22px;margin:20px 0}.error{color:#ffb2a4}.property{padding:16px 0;border-top:1px solid #344b3d}.property:first-child{border-top:0}.status{font-size:13px;color:#e9bd77}#signout{display:none}</style></head>
+<body><header><a href="./">← К каталогу</a><button id="signout" type="button">Выйти</button></header>
+<main><h1>Личный кабинет владельца</h1><p class="muted">Здесь будут отображаться только объекты, к которым у вашей учётной записи есть доступ.</p>
+<section class="panel" aria-live="polite"><h2 id="heading">Проверяем доступ…</h2><p id="message" class="muted">Подключение к системе авторизации.</p><div id="properties"></div></section></main>
+<script type="module">
+const heading=document.querySelector('#heading'),message=document.querySelector('#message'),properties=document.querySelector('#properties'),signout=document.querySelector('#signout');
+function show(title,text,isError=false){heading.textContent=title;message.textContent=text;message.className=isError?'error':'muted';}
+const config=window.GUEST_HOUSE_SUPABASE_CONFIG;
+if(!config?.url||!config?.publishableKey){show('Кабинет готовится','Безопасное подключение авторизации ещё не настроено. Управление объектами недоступно.');}
+else {
+ try {
+  const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+  const supabase=createClient(config.url,config.publishableKey);
+  const {data:{user},error:authError}=await supabase.auth.getUser();
+  if(authError||!user){location.replace('./login.html');}
+  else{
+   signout.style.display='inline-block';
+   signout.onclick=async()=>{await supabase.auth.signOut();location.replace('./login.html');};
+   const {data:memberships,error:membershipError}=await supabase.from('company_members').select('company_id,role').eq('user_id',user.id);
+   if(membershipError){show('Нет доступа к списку компаний','Права на чтение членства ещё не настроены. Доступ к объектам закрыт.',true);}
+   else if(!memberships?.length){show('Доступ к объектам пока не выдан','Учётная запись создана, но администратор ещё не привязал её к компании.');}
+   else{
+    const companyIds=[...new Set(memberships.map(m=>m.company_id).filter(Boolean))];
+    const {data:items,error:propertyError}=await supabase.from('properties').select('id,name,published,company_id').in('company_id',companyIds).order('name');
+    if(propertyError){show('Не удалось загрузить объекты','Необходимо проверить серверные политики доступа. Данные не раскрываются.',true);}
+    else{
+     show('Мои объекты',items?.length?'Доступные объекты вашей компании. Редактирование включим после проверки серверных прав.':'У вашей компании пока нет объектов.');
+     for(const item of items||[]){const div=document.createElement('div');div.className='property';const name=document.createElement('strong');name.textContent=item.name||'Объект без названия';const status=document.createElement('div');status.className='status';status.textContent=item.published?'Опубликован':'Черновик';div.append(name,status);properties.append(div);}
+    }
+   }
+  }
+ }catch(e){show('Не удалось подключиться','Проверьте подключение и повторите попытку позже.',true);}
+}
+</script></body></html>
