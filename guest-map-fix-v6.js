@@ -50,7 +50,7 @@
           if(seen.has(key))continue;
           seen.add(key);unique.push([h.lat,h.lng]);
         }
-        if(unique.length){
+        if(unique.length && (typeof selectedLocality==='undefined'||selectedLocality==='all')){
           const bounds=L.latLngBounds(unique);
           map.fitBounds(bounds,{paddingTopLeft:[42,100],paddingBottomRight:[42,190],maxZoom:13,animate:false});
         }
