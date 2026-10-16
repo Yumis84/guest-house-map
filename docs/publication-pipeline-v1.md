@@ -54,4 +54,15 @@ Read-only review of sibling candidate `guest-house-map-owner-v1/supabase/migrati
 
 Required candidate ordering is Owner Cabinet V1, Publication Pipeline V1 base, then integration hardening, with no application traffic between steps. Because those are separate candidate files, the safer final rollout is to remove the unsafe grant and policy from Owner Cabinet before it is ever applied. Rollback must revoke RPC execution first and may drop the RPCs, but must not restore direct owner `UPDATE`; restoring the bypass is not a safe rollback.
 
-The SQL remains blocked from application until a disposable Supabase stack confirms catalog assumptions, `extensions.digest`, function ownership, JWT behavior, RLS interaction, concurrent transitions and migration ordering. Publish/candidate/pointer/rollback RPCs are intentionally not implemented: immutable snapshot artifact verification and the real publication worker trust boundary are not available in this repository.
+The SQL remains blocked from application until a disposable Supabase stack confirms catalog assumptions, `extensions.digest`, function ownership, JWT behavior, RLS interaction, concurrent transitions and migration ordering. Publish/candidate/pointer/rollback RPCs are intentionally not implemented. The immutable artifact and worker trust boundary are offline reference implementations only; they do not provide a hosted or database-backed production worker.
+
+## Phase D: offline end-to-end adapter
+
+`publication/offline-publication-adapter.mjs` now connects server-resolved owner
+submission, independent review, immutable candidate/artifact creation, service-only
+worker publication, optimistic pointer updates, rollback and revalidated public
+snapshot reads. It remains an offline reference and is not loaded by the website.
+
+See `offline-e2e-adapter-v1.md` for the exact Owner Cabinet and eco-museum
+integration patches, cross-repository contract tests, security audit and known
+limitations. Those repositories were not modified.

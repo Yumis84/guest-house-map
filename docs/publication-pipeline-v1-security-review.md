@@ -1,6 +1,6 @@
 # Publication Pipeline V1 security review
 
-Scope: offline Phase B/C prototype on `feature/publication-pipeline-v1`. No hosted service, production database, OAuth, n8n, booking workflow, public runtime or Owner Cabinet worktree was modified.
+Scope: offline Phase B/C/D prototype on `feature/publication-pipeline-v1`. No hosted service, production database, OAuth, n8n, booking workflow, public runtime or Owner Cabinet worktree was modified.
 
 | Gate | Result | Evidence / remaining boundary |
 | --- | --- | --- |
@@ -8,7 +8,7 @@ Scope: offline Phase B/C prototype on `feature/publication-pipeline-v1`. No host
 | Public consumer field compatibility | PASS | Validator/build tests cover map, search, card, contact, photo and stable booking-ID fields. Booking/inventory code is unchanged. |
 | Ownership and allowed fields | PASS (offline) | Workflow rejects foreign-company submissions, stale base revisions and non-allowlisted fields. |
 | Independent review | PASS (offline) | Reviewer role is separate; self-review, missing reasons, second decisions and unapproved publication are rejected. |
-| Revoke and stale submissions | PASS (offline) | Pending/approved submission can be revoked; publication after revoke or after competing revision advancement fails closed. |
+| Revoke and stale submissions | PASS (offline) | Pending/approved/candidate submission can be revoked; publication after revoke or after competing revision advancement fails closed. Failed immutable candidates can be identically retried. |
 | Immutable publication and rollback | PASS (offline) | Exclusive snapshot/manifest creation, hashes, compare-and-swap pointer version, validated history rollback and last-known-good fallback are tested. |
 | Immutable audit trail | PASS (offline model) | Ordered events carry previous-event and current-event SHA-256 hashes; callers receive copies only. |
 | Unsafe URLs/private paths/invalid schema | PASS | Final whole-snapshot validation rejects unsafe URLs, traversal, unknown fields, IDs, parents and coordinates. |
@@ -18,5 +18,6 @@ Scope: offline Phase B/C prototype on `feature/publication-pipeline-v1`. No host
 | Public runtime integration | NOT STARTED / OUT OF SCOPE | Existing static files remain the serving path; no partial rollout or deployment occurred. |
 | Rollback of database migration | NOT STARTED / BLOCKED | No migration was applied. A rollback script can only be finalized after disposable-stack migration acceptance. |
 | Worker trust boundary | PASS (offline contract) | Service-identity audience, live role/revocation lookup, whole-artifact hash/manifest verification, serialized CAS, idempotency and rollback negative tests are implemented without a browser or network entry point. Multi-instance CAS remains a hosted acceptance requirement. |
+| End-to-end adapter | PASS (offline contract) | Server-resolved owner/reviewer/publisher identities, independent approval, immutable artifact handoff, worker-only publication, rollback and revalidated public reads pass end-to-end and negative tests. |
 
-Conclusion: the offline state machine, snapshot contract and filesystem publication semantics pass their automated gates. Static regression checks reject any direct client-role `properties` update grant/policy and owner attempts to toggle `published`. The pipeline is not production-ready: the integration SQL is only a candidate, publication/pointer/rollback RPCs remain intentionally unimplemented, and all SQL transitions and rollback procedures require disposable Supabase acceptance plus a separate public-consumer rollout approval.
+Conclusion: the offline state machine, snapshot contract, E2E adapter and filesystem publication semantics pass their automated gates. Static regression checks reject any direct client-role `properties` update grant/policy and owner attempts to toggle `published`. The pipeline is not production-ready: the integration SQL is only a candidate, publication/pointer/rollback RPCs remain intentionally unimplemented, and all SQL transitions and rollback procedures require disposable Supabase acceptance plus a separate public-consumer rollout approval. Precise cross-repository patch instructions, contract tests and limitations are in `offline-e2e-adapter-v1.md`.

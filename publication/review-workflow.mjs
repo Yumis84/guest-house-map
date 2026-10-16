@@ -111,7 +111,7 @@ export class PublicationReviewWorkflow {
     const user = actor(revokedBy);
     const submission = this.#getSubmission(submissionId);
     if (submission.submittedBy !== user.id && !user.roles.has('admin')) throw new Error('Actor cannot revoke this submission');
-    if (!['pending', 'approved'].includes(submission.status)) throw new Error(`Submission cannot be revoked from ${submission.status}`);
+    if (!['pending', 'approved', 'candidate'].includes(submission.status)) throw new Error(`Submission cannot be revoked from ${submission.status}`);
     submission.status = 'revoked';
     submission.decision = { reason: required(reason, 'Revoke reason'), revokedBy: user.id, revokedAt: instant(revokedAt, 'revokedAt') };
     this.#audit({ type: 'submission.revoked', actorId: user.id, occurredAt: revokedAt, submissionId, details: { reason } });
@@ -122,7 +122,7 @@ export class PublicationReviewWorkflow {
     const user = actor(publisher);
     if (![...user.roles].some(role => PUBLISH_ROLES.has(role))) throw new Error('Actor cannot create a publication candidate');
     const submission = this.#getSubmission(submissionId);
-    if (submission.status !== 'approved') throw new Error(`Submission is not approved (${submission.status})`);
+    if (!['approved', 'candidate'].includes(submission.status)) throw new Error(`Submission is not approved (${submission.status})`);
     const property = this.#properties.get(submission.propertyId);
     if (property.revision !== submission.baseRevision) throw new Error('Approved submission is stale');
     const snapshot = copy(assertPublicSnapshot(copy(baselineSnapshot)));
@@ -133,9 +133,17 @@ export class PublicationReviewWorkflow {
     snapshot.publishedAt = instant(publishedAt, 'publishedAt');
     snapshot.previousSnapshotId = baselineSnapshot.snapshotId;
     assertPublicSnapshot(snapshot);
+    const snapshotHash = hash(snapshot);
+    if (submission.status === 'candidate') {
+      const existing = submission.decision.publicationCandidate;
+      if (existing.snapshotId !== snapshotId || existing.snapshotHash !== snapshotHash) {
+        throw new Error('Publication candidate is immutable');
+      }
+      return copy(snapshot);
+    }
     submission.status = 'candidate';
-    submission.decision.publicationCandidate = { snapshotId, createdBy: user.id, createdAt: publishedAt, snapshotHash: hash(snapshot) };
-    this.#audit({ type: 'publication.candidate_created', actorId: user.id, occurredAt: publishedAt, submissionId, details: { snapshotId, snapshotHash: hash(snapshot) } });
+    submission.decision.publicationCandidate = { snapshotId, createdBy: user.id, createdAt: publishedAt, snapshotHash };
+    this.#audit({ type: 'publication.candidate_created', actorId: user.id, occurredAt: publishedAt, submissionId, details: { snapshotId, snapshotHash } });
     return copy(snapshot);
   }
 
