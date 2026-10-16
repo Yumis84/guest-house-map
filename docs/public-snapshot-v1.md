@@ -70,3 +70,11 @@ Phase B checks, which write only to per-test operating-system temp directories, 
 ```text
 node --test --test-isolation=none test/public-snapshot-v1.test.mjs test/publication-pipeline-v1.test.mjs
 ```
+
+The complete Phase B/C offline suite is:
+
+```text
+node --test --test-isolation=none test/public-snapshot-v1.test.mjs test/publication-pipeline-v1.test.mjs test/review-workflow-v1.test.mjs
+```
+
+The review tests cover owner/foreign-company boundaries, field allowlisting, independent approval and rejection, mandatory reasons, revocation, stale revisions, unsafe approved content failing final validation, publisher-only publication/rollback, revision advancement and audit-chain integrity. No test contacts Supabase or modifies either public runtime.

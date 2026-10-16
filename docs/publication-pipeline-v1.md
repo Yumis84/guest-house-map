@@ -39,3 +39,9 @@ Audit actual public consumers in this repo and the eco-museum repo, produce a co
 ## Isolated validation prototype
 
 Issue #10's read-only consumer audit, proposed V1 JSON contract, fail-closed/rollback notes and test command are documented in [`public-snapshot-v1.md`](public-snapshot-v1.md). The prototype is not referenced by either public runtime.
+
+## Phase C: review workflow prototype
+
+`publication/review-workflow.mjs` is an offline reference state machine. It enforces current company ownership, an allowlist of owner-editable fields, optimistic property revisions, independent reviewer decisions with reasons, publisher-only candidate creation, revoke-before-publication, stale-submission rejection and a hash-chained audit trail. Candidate construction applies an approved patch to a copy of the last validated snapshot and validates the whole result before it can be handed to the immutable snapshot store.
+
+`publication/sql/20261016_publication_pipeline_v1.candidate.sql` is a design candidate only. It defines the proposed tables, least-privilege grants and initial RLS boundaries, but deliberately leaves privileged transition functions blocked until disposable Supabase acceptance. It has not been applied anywhere.
