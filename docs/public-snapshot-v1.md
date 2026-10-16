@@ -1,6 +1,6 @@
 # Public snapshot V1: consumer audit and validation prototype
 
-Status: isolated prototype for Issue 10. Nothing in this directory is loaded by the public site. No publish, database, n8n, booking, migration, deployment or rollback action is implemented here.
+Status: isolated offline prototype for Issue 10 and Publication Pipeline V1 phase B. Nothing in this directory is loaded by the public site. No database, n8n, booking, migration or deployment action is implemented here.
 
 ## Audited consumers
 
@@ -47,6 +47,14 @@ Any validation error rejects the complete candidate. Consumers must keep serving
 
 The two current `http://` website values are deliberately mapped to `null` in the fixture builder rather than admitted as safe publication URLs. No source data is changed.
 
+## Offline publication store (phase B)
+
+`publication/build-public-snapshot.mjs` deterministically maps the current legacy catalog and photo mapping into the validated V1 contract. Callers must supply the snapshot ID and UTC publication time; the builder does not read a clock or network service.
+
+`publication/snapshot-store.mjs` writes only below the operating-system temp directory or `test/fixtures`. Snapshot and manifest files are created exclusively and never overwritten. Each publish or rollback stages a pointer-history record, atomically selects it through `current.json`, and then makes the immutable, monotonically versioned history record visible. Selection verifies the snapshot and manifest hashes and the complete snapshot contract. A corrupt current pointer or corrupt selected artifact falls back through pointer history to the newest fully valid selection.
+
+This is a filesystem mechanism only. It has no production path, authorization service, reviewer workflow, signature verification, public consumer integration or live publication command.
+
 ## Run the isolated checks
 
 Requires Node.js 20 or newer and no installed packages:
@@ -56,3 +64,9 @@ node --test --test-isolation=none test/public-snapshot-v1.test.mjs
 ```
 
 `--test-isolation=none` also makes the command work in restricted environments that prohibit child processes. The tests build a candidate snapshot in memory from the current static catalog and photo map. They do not write a snapshot, call a network service, or alter runtime files.
+
+Phase B checks, which write only to per-test operating-system temp directories, run with:
+
+```text
+node --test --test-isolation=none test/public-snapshot-v1.test.mjs test/publication-pipeline-v1.test.mjs
+```
