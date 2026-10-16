@@ -35,3 +35,7 @@ Keep Owner Cabinet's private bucket private. A separately reviewed publication p
 
 ## Next implementation task
 Audit actual public consumers in this repo and the eco-museum repo, produce a concrete field mapping, propose minimal snapshot schema, tests and migration candidate in this branch. Keep PR separate from Owner Cabinet PR #7; do not deploy.
+
+## Isolated validation prototype
+
+Issue #10's read-only consumer audit, proposed V1 JSON contract, fail-closed/rollback notes and test command are documented in [`public-snapshot-v1.md`](public-snapshot-v1.md). The prototype is not referenced by either public runtime.
