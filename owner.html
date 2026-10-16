@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Кабинет владельца · Краснолесье</title><link rel="stylesheet" href="./owner.css"></head>
+<body><header><a href="./">← К каталогу</a><button id="signout" class="secondary" type="button" hidden>Выйти</button></header>
+<main><h1>Кабинет владельца</h1><p>Ваши объекты, контакты и фотографии. Доступ определяется членством в компании.</p>
+<section class="panel" id="dashboard"><h2 id="heading">Проверяем доступ…</h2><p id="message" role="status" aria-live="polite">Подключение к системе.</p><button id="reload" class="secondary" type="button" hidden>Обновить список</button><div id="properties"></div></section>
+<section class="panel" id="editor" hidden><h2 id="editorTitle" tabindex="-1">Объект</h2><p id="editorStatus" role="status" aria-live="polite"></p>
+<form id="propertyForm"><fieldset id="fields"><legend>Описание и контакты</legend>
+<label for="name">Название</label><input id="name" name="name" required maxlength="160">
+<label for="description">Описание</label><textarea id="description" name="description" maxlength="10000"></textarea>
+<div class="grid"><div><label for="contact_phone">Телефон для гостей</label><input id="contact_phone" name="contact_phone" type="tel" maxlength="40"></div><div><label for="contact_email">Email для гостей</label><input id="contact_email" name="contact_email" type="email" maxlength="254"></div></div>
+<label for="website_url">Сайт</label><input id="website_url" name="website_url" type="url" placeholder="https://" maxlength="2048">
+<label><input id="published" type="checkbox">Разрешить публикацию</label><p class="muted">Контакты и описание опубликованного объекта доступны посетителям. Обновление сайта проводится отдельно.</p>
+</fieldset><div class="actions"><button id="save" type="submit">Сохранить изменения</button><button id="cancel" type="button" class="secondary">Закрыть</button></div></form>
+<h3>Фотографии объекта</h3><p>JPEG, PNG или WebP, до 5 МБ. Фото хранятся в закрытой галерее компании; публикация на сайте требует отдельной проверки.</p>
+<div id="uploadControls"><label for="photo">Добавить фотографию</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp"><div class="actions"><button id="upload" type="button">Загрузить фото</button></div></div>
+<p id="photoStatus" role="status" aria-live="polite"></p><div id="photos" class="photos"></div></section></main>
+<script src="./supabase-public-config.js"></script><script src="./vendor/supabase.js"></script><script type="module" src="./owner-dashboard.js"></script></body></html>

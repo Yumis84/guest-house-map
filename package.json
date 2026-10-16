@@ -1,0 +1,23 @@
+{
+  "name": "guest-house-map",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/serve.mjs",
+    "test": "node --test --test-isolation=none tests/*.test.mjs",
+    "test:browser": "playwright test",
+    "test:rls": "node --test --test-isolation=none tests/rls.test.mjs",
+    "test:jwt": "node scripts/test-local-jwt.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@playwright/test": "1.64.1",
+    "leaflet": "1.9.4",
+    "pg": "8.23.1",
+    "supabase": "2.121.0"
+  }
+}

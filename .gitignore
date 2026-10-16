@@ -1,0 +1,7 @@
+node_modules/
+.artifacts/
+test-results/
+playwright-report/
+.env*
+supabase/.temp/
+supabase/.branches/
