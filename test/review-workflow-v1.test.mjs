@@ -36,6 +36,7 @@ test('ownership, editable fields and optimistic version are enforced', () => {
   for (const args of [
     { submittedBy: otherOwner, patch: { description: 'x' }, baseRevision: 4, error: /does not belong/ },
     { submittedBy: owner, patch: { name: 'forged' }, baseRevision: 4, error: /not owner-editable/ },
+    { submittedBy: owner, patch: { published: true }, baseRevision: 4, error: /not owner-editable/ },
     { submittedBy: owner, patch: { description: 'x' }, baseRevision: 3, error: /Stale property revision/ }
   ]) {
     assert.throws(() => make().submit({ submissionId: 'submission-1', propertyId: property.id, submittedAt: at(0), ...args }), args.error);
