@@ -9,6 +9,7 @@ drop trigger if exists owner_property_revision on public.properties;
 drop function if exists public.owner_property_revision();
 revoke select on public.company_members from authenticated;
 -- Keep the bucket fail-closed even if unrelated broad policies exist.
+drop policy if exists owner_photos_rollback_lock on storage.objects;
 create policy owner_photos_rollback_lock on storage.objects as restrictive for all to anon,authenticated
 using(bucket_id<>'owner-property-photos') with check(bucket_id<>'owner-property-photos');
 drop policy if exists owner_photos_select on storage.objects;

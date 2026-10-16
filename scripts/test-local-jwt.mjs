@@ -4,18 +4,11 @@ import {randomUUID} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import pg from 'pg';
 import {createClient} from '@supabase/supabase-js';
-function local(name,protocols){
- const value=process.env[name];if(!value)throw Error(name+' is required for an isolated local Supabase stack.');
- const url=new URL(value);if(!['localhost','127.0.0.1','[::1]'].includes(url.hostname)||!protocols.includes(url.protocol))throw Error('Refusing non-loopback '+name);
- return value;
-}
+import {readOwnerTestConfig} from './owner-test-config.mjs';
 let db,admin;const users=[],companies=[randomUUID(),randomUUID()],properties=[randomUUID(),randomUUID(),randomUUID()];
 const paths=[];
 try{
- const url=local('OWNER_TEST_SUPABASE_URL',['http:']);
- const database=local('OWNER_TEST_DATABASE_URL',['postgres:','postgresql:']);
- const anon=process.env.OWNER_TEST_ANON_KEY,service=process.env.OWNER_TEST_SERVICE_ROLE_KEY;
- if(!anon||!service)throw Error('Local anon and service-role keys are required; do not use hosted credentials.');
+ const {url,database,anon,service}=readOwnerTestConfig();
  admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
  db=new pg.Client({connectionString:database});await db.connect();
  assert.equal((await db.query('select public.owner_cabinet_version() version')).rows[0].version,1,'Install candidate on the isolated local baseline first');
@@ -63,15 +56,15 @@ try{
  for(const client of clients)await client.auth.signOut();
  console.log('PASS JWT Storage and membership revocation; local password sign-in/sign-out');
 }catch(error){
- console.error('FAIL local JWT acceptance: '+(error instanceof assert.AssertionError?'assertion failed (inspect isolated fixture stack)':error.message));
+ console.error('FAIL local JWT acceptance: '+error.message);
  process.exitCode=1;
 }finally{
  if(db){
-  if(admin&&paths.length)await admin.storage.from('owner-property-photos').remove(paths);
+  if(admin&&paths.length)await admin.storage.from('owner-property-photos').remove(paths).catch(()=>{});
   await db.query('delete from public.properties where id=any($1::uuid[])',[properties]).catch(()=>{});
   await db.query('delete from public.company_members where company_id=any($1::uuid[])',[companies]).catch(()=>{});
   await db.query('delete from public.companies where id=any($1::uuid[])',[companies]).catch(()=>{});
-  if(admin)for(const id of users)await admin.auth.admin.deleteUser(id);
-  await db.end();
+  if(admin)for(const id of users)await admin.auth.admin.deleteUser(id).catch(()=>{});
+  await db.end().catch(()=>{});
  }
 }

@@ -16,7 +16,7 @@ A separate clean clone was created after searching normal development folders; n
 | Mobile/desktop browser acceptance | PASS | 66 tests, Chrome on Windows; 320, 390, 1440 px |
 | Photo isolation and permissions | PASS (local) | SQL policy tests + browser upload/delete; real Storage service still unverified |
 | Dependency audit | PASS | npm audit: 0 vulnerabilities at installation |
-| Full JWT/Auth/Storage acceptance | FAIL / BLOCKED | No isolated local stack; required OWNER_TEST_* settings absent; runner refused to start |
+| Full JWT/Auth/Storage acceptance | FAIL / BLOCKED | No isolated local stack; required OWNER_TEST_* settings and explicit disposable-stack confirmation absent; runner refused before network access |
 | Hosted email confirmation/recovery | FAIL / NOT RUN | SMTP, redirect allowlist and real email delivery not verified |
 | Production readiness | FAIL / BLOCKED | Migration/configuration/membership rollout and real acceptance remain outstanding |
 | Production / main / n8n untouched | PASS | No migration application, membership assignment, merge, deployment or n8n call |
@@ -52,3 +52,13 @@ CI also preserves browser evidence as a short-lived artifact.
 
 See [RLS acceptance](owner-cabinet-rls-acceptance.md).
 PR: https://github.com/Yumis84/guest-house-map/pull/7 (keep Draft).
+
+## Continuation audit, 2026-10-15
+
+- PASS: migration and non-destructive rollback reviewed; PGlite executed the candidate policies and rollback, including a second rollback run, without losing retained private objects.
+- PASS: isolated acceptance preflight now requires an explicit disposable-stack confirmation, rejects non-loopback endpoints and equal anon/service keys, and has local unit coverage. Cleanup remains best-effort and the runner still never applies migrations.
+- PASS: `npm test` — 50/50 tests. Node test process isolation is disabled because this managed Windows environment blocks child-process spawning; test semantics are unchanged.
+- PASS: `npm run build`.
+- BLOCKED: `npm run test:browser` could not start a Playwright worker (`spawn EPERM`) in the managed environment. No browser assertion ran; the earlier 66-test PASS remains historical evidence, not a new result.
+- EXPECTED FAIL / BLOCKED: `npm run test:jwt` refused before network access because no disposable local stack or required settings were supplied.
+- NOT COMMITTED: the requested all-tests-pass condition was not met in this continuation run.

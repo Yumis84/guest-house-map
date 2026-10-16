@@ -83,4 +83,5 @@ test('candidate rollback disables owner writes and locks private photos without 
   await assert.rejects(db.query("update properties set name='Blocked' where id=$1",[pid(1)]),e=>e.code==='42501');
  });
  assert.equal((await rows('select * from storage.objects')).length,2);
+ await db.exec(await readFile('supabase/rollback/owner_cabinet_v1.sql','utf8'));
 });

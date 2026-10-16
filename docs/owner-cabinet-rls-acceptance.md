@@ -54,8 +54,8 @@ Path: `<company_uuid>/<property_uuid>/<random_uuid>.webp`.
 On a disposable local Supabase stack (never the working project):
 1. Initialize/start a separate local Supabase workspace with Docker, following `npx supabase --help`.
 2. Load `tests/fixtures/local-supabase-baseline.sql` into its empty public schema, then load the candidate migration. This fixture is intentionally minimal; also test a sanitized full-schema staging clone before rollout.
-3. Set process-only `OWNER_TEST_SUPABASE_URL` (http://127.0.0.1:54321), `OWNER_TEST_DATABASE_URL` (loopback Postgres), `OWNER_TEST_ANON_KEY`, `OWNER_TEST_SERVICE_ROLE_KEY` using **local** stack values. Never paste credentials into source or reports.
-4. Run `npm run test:jwt`. It checks actual password sign-in and JWT reads/writes, foreign-company/viewer denial, metadata escalation denial, private Storage read/upload/overwrite/delete and membership revocation.
+3. Set process-only `OWNER_TEST_SUPABASE_URL` (http://127.0.0.1:54321), `OWNER_TEST_DATABASE_URL` (loopback Postgres), `OWNER_TEST_ANON_KEY`, `OWNER_TEST_SERVICE_ROLE_KEY` using **local** stack values. Also set `OWNER_TEST_CONFIRM_ISOLATED=disposable-local-owner-cabinet` only after confirming the stack is disposable. The runner rejects non-loopback URLs and equal anon/service keys. Never paste credentials into source or reports. A loopback proxy/tunnel is not proof of isolation: do not point these variables at one.
+4. Run `npm run test:jwt`. It never applies schema changes. It checks actual password sign-in and JWT reads/writes, foreign-company/viewer denial, metadata escalation denial, private Storage read/upload/overwrite/delete and membership revocation, then best-effort removes synthetic fixtures.
 5. Configure local email delivery and exact callback URLs; complete real confirmation and recovery email flows, including expired/used links and another browser. Browser mocks cannot prove delivery.
 6. Re-audit grants, triggers, functions and policies on the staging clone; run security advisors. Verify no existing column-level grant widens protected columns and no privileged function supplies another write path.
 
