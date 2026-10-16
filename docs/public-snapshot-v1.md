@@ -74,7 +74,11 @@ node --test --test-isolation=none test/public-snapshot-v1.test.mjs test/publicat
 The complete Phase B/C offline suite is:
 
 ```text
-node --test --test-isolation=none test/public-snapshot-v1.test.mjs test/publication-pipeline-v1.test.mjs test/review-workflow-v1.test.mjs
+node --test --test-isolation=none test/*.test.mjs
 ```
+
+The worker-boundary contract adds `test/publication-worker-contract-v1.test.mjs`. See
+[`publication-worker-v1-trust-boundary.md`](publication-worker-v1-trust-boundary.md) for the authority and artifact boundary and
+[`disposable-supabase-publication-v1-acceptance.md`](disposable-supabase-publication-v1-acceptance.md) for the deliberately unexecuted database acceptance matrix.
 
 The review tests cover owner/foreign-company boundaries, field allowlisting, independent approval and rejection, mandatory reasons, revocation, stale revisions, unsafe approved content failing final validation, publisher-only publication/rollback, revision advancement and audit-chain integrity. No test contacts Supabase or modifies either public runtime.
