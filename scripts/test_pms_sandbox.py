@@ -23,7 +23,7 @@ if not DSN:
 
 
 def psql(sql=None, file=None):
-    cmd = ["psql", DSN, "-X", "-v", "ON_ERROR_STOP=1", "-qAt"]
+    cmd = ["psql", DSN, "-X", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose", "-qAt"]
     if file is not None:
         cmd += ["-f", str(ROOT / file)]
     else:
@@ -74,7 +74,7 @@ for t in threads:
 if any(t.is_alive() for t in threads):
     sys.exit("FAIL: concurrent calls timed out")
 success = sum(r.returncode == 0 for r in results)
-excluded = sum("conflicting key value violates exclusion constraint" in r.stderr for r in results)
+excluded = sum("23P01" in r.stderr for r in results)
 if success != 1 or excluded != 1:
     sys.exit(f"FAIL: expected one confirmed and one exclusion failure; successes={success}, excluded={excluded}; stderr={[r.stderr for r in results]}")
 check = psql(sql=f"""SELECT count(*) FROM pms_sandbox.reservations
@@ -83,3 +83,26 @@ if check.returncode or check.stdout.strip() != "1":
     sys.exit("FAIL: expected exactly one committed confirmed reservation")
 print("PASS two-session collision: exactly one confirmed, one rejected")
 # No automatic teardown: disposable database must be dropped by operator.
+
+# A separate race uses the same request key and must return the same UUID.
+request_key = str(uuid.uuid4())
+barrier2 = threading.Barrier(3)
+retries = []
+
+
+def retry_worker():
+    barrier2.wait()
+    retries.append(psql(sql=f"SELECT pms_sandbox.confirm_reservation_idempotent('{unit}','2027-01-10','2027-01-12','{request_key}');"))
+
+
+threads2 = [threading.Thread(target=retry_worker) for _ in range(2)]
+for t in threads2:
+    t.start()
+barrier2.wait()
+for t in threads2:
+    t.join(timeout=20)
+if any(t.is_alive() for t in threads2):
+    sys.exit("FAIL: idempotency race timed out")
+if len(retries) != 2 or any(r.returncode for r in retries) or retries[0].stdout.strip() != retries[1].stdout.strip():
+    sys.exit(f"FAIL: idempotency race produced different results: {[(r.returncode, r.stdout, r.stderr) for r in retries]}")
+print("PASS two-session retry: one reservation ID returned twice")
