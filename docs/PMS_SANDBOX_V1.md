@@ -6,7 +6,8 @@
 - `001`: a standalone PostgreSQL resource model; room and whole-apartment units may share underlying physical resources. A partial GiST exclusion constraint rejects overlapping **active** allocations.
 - `003`: sandbox-owner-only atomic confirmation, using ordered resource row locks and one transaction. Not an exposed RPC.
 - `005`: sandbox-owner-only idempotent cancellation and release of allocations.
-- `002/004/006`: rollback-only smoke checks.
+- `007`: request-key idempotent confirmation wrapper with transaction-scoped advisory lock. Exact key is unique; changed parameters are rejected, and cancelled retries do not recreate bookings.
+- `002/004/006/008`: rollback-only smoke checks.
 - `scripts/test_pms_sandbox.py`: launches two real `psql` processes against the same resource; requires exactly one confirmation and one exclusion failure. **Harness authored, not executed in this change.**
 
 ## Running locally
@@ -21,7 +22,7 @@ The harness refuses non-local hosts and other database names. Do not forward a p
 ## Known blockers before staging
 1. **Data consistency**: reservations and resource allocations currently have no enforced equality of stay, no proof all mapped resources are allocated, and no database-enforced relationship between allocation.active and reservation.status. Prototype functions cooperate but direct owner writes can violate invariants. Add constraints/triggers and revoke direct writes.
 2. **Ownership and security**: schema has no tenant memberships, no RLS policies and no verified Supabase JWT integration. FORCE RLS is enabled and no grants are provided, so only privileged schema owners can run this proof. Need dedicated least-privilege roles and real Auth/PostgREST acceptance.
-3. **Idempotency**: cancellation is idempotent, but reservation creation has no client request key. Add tenant-scoped request id and deduplication before connecting n8n.
+3. **Idempotency**: sandbox request-key deduplication is implemented, but keys are not tenant-scoped and have no authenticated owner binding. Add tenant-scoped request IDs before connecting n8n.
 4. **External iCal**: asynchronous synchronization does not prevent external double bookings. Need event IDs, conflict queue, update/cancel semantics, timezones, loop prevention and official verification of Russian OTA features.
 5. **Review**: align unit model with PR #4/#6 and owner cabinet PR #7, run PostgreSQL harness and independent SQL/security audit. Rollback plan and migration order are not yet ready.
 
