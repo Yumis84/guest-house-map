@@ -102,6 +102,11 @@ test('public catalog hides contacts until owner confirmation',async()=>{
  });
 });
 test('candidate rollback disables owner writes and locks private photos without deleting data',async()=>{
+ await db.exec(await readFile('supabase/rollback/owner_self_publish.sql','utf8'));
+ await as(1,async()=>{
+  await assert.rejects(db.query('select public.set_property_published($1,true)',[pid(1)]),e=>e.code==='42883'||e.code==='42501');
+  assert.equal((await rows('select public.owner_cabinet_version() as version'))[0].version,1);
+ });
  await db.exec(await readFile('supabase/rollback/owner_cabinet_v1.sql','utf8'));
  await as(1,async()=>{
   assert.equal((await rows('select name from properties')).length,1);
