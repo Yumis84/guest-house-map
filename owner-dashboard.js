@@ -118,8 +118,13 @@ $('#upload').onclick=async()=>{
   finally{editorBusy(false);}
 };
 async function publicationAction(kind){
- if(busy||dirty||!selected||!publicationReady)return;
+ if(busy||!selected||!publicationReady)return;
+ if(dirty){$('#publicationStatus').textContent='Сначала сохраните изменения в карточке.';return;}
  const p=selected,token=epoch;
+ const role=members.find(m=>m.company_id===p.company_id)?.member_role;
+ if(!['owner','admin'].includes(role))return;
+ if(kind==='confirm'&&!confirm('Подтвердить, что указанные телефон и email можно показывать всем посетителям после публикации объекта?'))return;
+ if(kind==='publish'&&!p.published&&!confirm('Опубликовать объект в открытом каталоге? Название и описание станут публичными. Контакты будут показаны только после подтверждения.'))return;
  editorBusy(true);$('#publicationStatus').textContent='Выполняем действие…';
  try{
   await ensureUser();
