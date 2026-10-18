@@ -1,0 +1,40 @@
+name: Owner preview and RLS checks
+on:
+  pull_request:
+    paths:
+      - 'owner-demo.*'
+      - 'owner-dashboard.js'
+      - 'owner.html'
+      - 'tests/**'
+      - 'supabase/migrations/**'
+      - 'supabase/rollback/**'
+      - 'package*.json'
+      - '.github/workflows/owner-preview-checks.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate demo JavaScript syntax
+        run: node --check owner-demo.js
+      - name: Run isolated tests
+        run: npm test
+      - name: Upload static preview files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-demo-preview
+          path: |
+            owner-demo.html
+            owner-demo.js
+            owner.css
+          if-no-files-found: error
