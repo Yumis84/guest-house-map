@@ -143,4 +143,4 @@ try{
     };
     await load();
   }
-}catch(error){show('Кабинет недоступен',error.message?.startsWith('Подключение')?error.message:errorMessage(error));}
+}catch(error){const unconfigured=error.message?.startsWith('Подключение');if(unconfigured)$('#ownerSetupNotice').hidden=false;show('Кабинет недоступен',unconfigured?error.message:errorMessage(error));}
