@@ -60,4 +60,9 @@ begin
 end $$;
 revoke all on function public.confirm_property_contacts(uuid) from public, anon;
 grant execute on function public.confirm_property_contacts(uuid) to authenticated;
+-- Expose v2 only after all required RPCs and column grants have been installed in this transaction.
+create or replace function public.owner_cabinet_version() returns integer
+language sql stable security invoker set search_path='' as $$ select 2 $$;
+revoke all on function public.owner_cabinet_version() from public,anon;
+grant execute on function public.owner_cabinet_version() to authenticated;
 commit;
