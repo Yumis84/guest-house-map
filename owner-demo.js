@@ -1,14 +1,34 @@
 const byId=id=>document.getElementById(id);
 const houses=[
-{name:'Демонстрационный дом № 1',description:'Пример описания. Это не настоящий гостевой дом.',phone:'',email:'',published:false,confirmed:false,type:'Гостевой дом',guests:4,bedrooms:2,beds:4,locality:'Краснолесье',amenities:[]},
-{name:'Демонстрационный дом № 2',description:'Второй вымышленный объект.',phone:'',email:'',published:true,confirmed:false,type:'Коттедж',guests:6,bedrooms:3,beds:6,locality:'Чистые Пруды',amenities:['Wi-Fi']}
+{name:'Демонстрационный дом № 1',description:'Пример описания. Это не настоящий гостевой дом.',phone:'',email:'',published:false,confirmed:false,type:'Гостевой дом',guests:4,bedrooms:2,beds:4,locality:'Краснолесье',amenities:[],address:'',lat:'',lng:'',photos:[]},
+{name:'Демонстрационный дом № 2',description:'Второй вымышленный объект.',phone:'',email:'',published:true,confirmed:false,type:'Коттедж',guests:6,bedrooms:3,beds:6,locality:'Чистые Пруды',amenities:['Wi-Fi'],address:'',lat:'',lng:'',photos:[]}
 ];
 let current=0,changed=false,step=0;
 function showStep(){document.querySelectorAll('.demo-step').forEach((el,i)=>el.hidden=i!==step);byId('demoProgress').textContent='Шаг '+(step+1)+' из 4';byId('demoPrev').hidden=step===0;byId('demoNext').hidden=step===3;}
-function drawPhotos(){const grid=byId('demoPhotoGrid');grid.replaceChildren();for(const photo of houses[current].photos){const img=document.createElement('img');img.src=photo;img.alt='Фотография дома';grid.append(img);}}
+function drawPhotos(){
+ const grid=byId('demoPhotoGrid');grid.replaceChildren();
+ houses[current].photos.forEach((photo,index)=>{
+  const tile=document.createElement('div');tile.className='demo-photo-tile';
+  const img=document.createElement('img');img.src=photo;img.alt='Фото '+(index+1);
+  const controls=document.createElement('div');
+  for(const [label,delta] of [['←',-1],['→',1]]){
+   const btn=document.createElement('button');btn.type='button';btn.className='secondary';btn.textContent=label;
+   btn.setAttribute('aria-label',delta<0?'Передвинуть фото влево':'Передвинуть фото вправо');
+   btn.disabled=index+delta<0||index+delta>=houses[current].photos.length;
+   btn.addEventListener('click',()=>{const arr=houses[current].photos;[arr[index],arr[index+delta]]=[arr[index+delta],arr[index]];changed=true;drawPhotos()});
+   controls.append(btn);
+  }
+  const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='×';remove.setAttribute('aria-label','Удалить фото');
+  remove.addEventListener('click',()=>{houses[current].photos.splice(index,1);changed=true;drawPhotos()});
+  controls.append(remove);tile.append(img,controls);
+  if(index===0){const cover=document.createElement('small');cover.textContent='Обложка';tile.append(cover)}
+  grid.append(tile);
+ });
+}
+
 byId('demoPrev').addEventListener('click',()=>{step=Math.max(0,step-1);showStep()});
 byId('demoNext').addEventListener('click',()=>{step=Math.min(3,step+1);showStep()});
-byId('demoPhotos').addEventListener('change',async e=>{const files=Array.from(e.target.files).slice(0,8);const images=await Promise.all(files.map(file=>new Promise(resolve=>{if(!file.type.startsWith('image/')||file.size>5_000_000)return resolve(null);const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve(null);reader.readAsDataURL(file)})));houses[current].photos=images.filter(Boolean);drawPhotos();changed=true;});
+byId('demoPhotos').addEventListener('change',async e=>{const files=Array.from(e.target.files).slice(0,8);const images=await Promise.all(files.map(file=>new Promise(resolve=>{if(!file.type.startsWith('image/')||file.size>5_000_000)return resolve(null);const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve(null);reader.readAsDataURL(file)})));houses[current].photos.push(...images.filter(Boolean));houses[current].photos=houses[current].photos.slice(0,8);drawPhotos();changed=true;});
 function draw(){
  const list=byId('demoProperties');list.replaceChildren();
  houses.forEach((house,index)=>{
@@ -46,7 +66,7 @@ function draw(){
 }
 byId('demoAdd').addEventListener('click',()=>{
  if(changed&&!confirm('Отменить несохранённые изменения?'))return;
- houses.push({name:'Новый гостевой дом',description:'',phone:'',email:'',published:false,confirmed:false,type:'Гостевой дом',guests:2,bedrooms:1,beds:2,locality:'Краснолесье',amenities:[]});
+ houses.push({name:'Новый гостевой дом',description:'',phone:'',email:'',published:false,confirmed:false,type:'Гостевой дом',guests:2,bedrooms:1,beds:2,locality:'Краснолесье',amenities:[],address:'',lat:'',lng:'',photos:[]});
  current=houses.length-1;changed=false;step=0;draw();byId('demoName').focus();
 });
 byId('demoForm').addEventListener('input',()=>changed=true);
@@ -64,6 +84,7 @@ byId('demoForm').addEventListener('submit',event=>{
 byId('demoPublish').addEventListener('click',()=>{
  if(changed){alert('Сначала сохраните изменения.');return;}
  const h=houses[current];
+ if(!h.published&&(!h.name.trim()||!h.locality.trim())){alert('Укажите название и населённый пункт.');step=0;showStep();return;}
  if(!h.published&&!confirm('Опубликовать этот демонстрационный объект?'))return;
  h.published=!h.published;draw();
 });
