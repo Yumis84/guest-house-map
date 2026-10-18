@@ -12,12 +12,12 @@
 @media(max-width:720px){.demo-layout{grid-template-columns:1fr}}
 </style></head><body>
 <header><a href="./">← К каталогу</a></header>
-<main><h1>Кабинет владельца: демонстрация</h1>
+<main><h1>Кабинет владельца: демонстрация</h1><p class="muted">Проверьте переключение объектов, сохранение изменений и то, какие сведения становятся видны гостям.</p>
 <p class="demo-banner"><strong>Демо, без подключения к базе.</strong> Все объекты, контакты и действия здесь вымышленные. Публикация и сохранение работают только внутри этой страницы, без реальных изменений.</p>
 <div class="demo-layout">
 <section class="panel"><h2>Мои объекты</h2><p class="muted">Выберите дом для редактирования.</p><div id="demoProperties"></div></section>
-<section class="panel"><h2 id="demoTitle">Объект</h2><p id="demoStatus" class="demo-status" role="status" aria-live="polite"></p>
-<form id="demoForm">
+<section class="panel"><h2 id="demoTitle">Объект</h2><p id="demoStatus" class="demo-status" role="status" aria-live="polite"></p><p id="demoHint" class="muted" aria-live="polite"></p>
+<form id="demoForm" autocomplete="off">
 <label for="demoName">Название</label><input id="demoName" required maxlength="160">
 <label for="demoDescription">Описание</label><textarea id="demoDescription" maxlength="10000"></textarea>
 <label for="demoPhone">Телефон для гостей</label><input id="demoPhone" type="tel">
