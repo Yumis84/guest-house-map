@@ -2,7 +2,7 @@ import {getClient,canEdit,propertyPatch,photoPath,preparePhoto,BUCKET,errorMessa
 const $=s=>document.querySelector(s);
 let client,user,items=[],members=[],selected=null,epoch=0,busy=false,dirty=false,signingOut=false;
 function show(title,text){$('#heading').textContent=title;$('#message').textContent=text;}
-function clearPrivate(){epoch++;items=[];members=[];selected=null;dirty=false;$('#properties').replaceChildren();$('#photos').replaceChildren();$('#editor').hidden=true;$('#propertyForm').reset();$('#photo').value='';}
+function clearPrivate(){epoch++;items=[];members=[];selected=null;dirty=false;updateStats(false);$('#properties').replaceChildren();$('#photos').replaceChildren();$('#editor').hidden=true;$('#propertyForm').reset();$('#photo').value='';}
 function expired(){clearPrivate();location.replace('./login.html');}
 function editorBusy(value){busy=value;$('#fields').disabled=value||!selected||!canEdit(members.find(m=>m.company_id===selected.company_id)?.member_role);$('#save').disabled=$('#fields').disabled;$('#upload').disabled=$('#fields').disabled;$('#photo').disabled=$('#fields').disabled;$('#cancel').disabled=value;$('#signout').disabled=value;$('#reload').disabled=value;$('#photos').querySelectorAll('button').forEach(b=>b.disabled=value);}
 function leave(){if(dirty&&!confirm('Закрыть без сохранения изменений?'))return;epoch++;selected=null;dirty=false;$('#editor').hidden=true;$('#photos').replaceChildren();$('#propertyForm').reset();$('#photo').value='';}
@@ -32,7 +32,12 @@ async function load(){
     render();
   }catch(error){if(token===epoch)show('Не удалось загрузить объекты',errorMessage(error));}
 }
+function updateStats(loaded){
+  const counts=loaded?[items.length,items.filter(p=>p.published).length,items.filter(p=>!p.published).length,items.filter(p=>canEdit(members.find(m=>m.company_id===p.company_id)?.member_role)).length]:null;
+  ['statTotal','statPublished','statDraft','statEditable'].forEach((id,i)=>{$('#'+id).textContent=counts?String(counts[i]):'—';});
+}
 function render(){
+  updateStats(true);
   $('#properties').replaceChildren();
   for(const p of items){
     const row=document.createElement('article');row.className='property';
@@ -138,4 +143,4 @@ try{
     };
     await load();
   }
-}catch(error){show('Кабинет недоступен',error.message?.startsWith('Подключение')?error.message:errorMessage(error));}
+}catch(error){const unconfigured=error.message?.startsWith('Подключение');if(unconfigured)$('#ownerSetupNotice').hidden=false;show('Кабинет недоступен',unconfigured?error.message:errorMessage(error));}

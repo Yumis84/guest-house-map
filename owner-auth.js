@@ -40,7 +40,7 @@ try{
   if(location.hash.includes('error')){$('#status').textContent='Ссылка недействительна или истекла. Запросите новую.';}
   if(new URL(location.href).searchParams.get('notice')==='logout-local')$('#status').textContent='Вы вышли на этом устройстве. Завершение серверной сессии не подтверждено.';
   history.replaceState(null,'',location.pathname+(recoverySession?'?flow=recovery':''));
-}catch(error){$('#status').textContent=error.message?.startsWith('Подключение')?error.message:'Подключение недоступно. Попробуйте позже.';client=null;}
+}catch(error){const notConfigured=error.message?.startsWith('Подключение');$('#status').textContent=notConfigured?error.message:'Подключение недоступно. Попробуйте позже.';if(notConfigured)$('#setupNotice').hidden=false;client=null;}
 setBusy(false);
 $('#form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy||!client)return;
