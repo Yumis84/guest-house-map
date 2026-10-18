@@ -10,6 +10,8 @@ test('publication controls are disabled until server capability is available',as
  assert.match(html,/id="publishToggle"[^>]*hidden disabled/);
  assert.match(html,/id="confirmContacts"[^>]*hidden disabled/);
  assert.match(js,/publicationReady=version===2/);
+ assert.match(js,/publicationReady\?',contact_confirmed_at':'/);
+ assert.match(js,/\[1,2\]\.includes\(version\)/);
  assert.match(js,/client\.rpc\(action,args\)/);
  assert.match(js,/\['owner','admin'\]/);
 });
