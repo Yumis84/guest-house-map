@@ -1,0 +1,24 @@
+/* Owner-only visual layer; auth and permission logic remain in owner-dashboard.js. */
+.owner-cabinet{color-scheme:light;--bg:#f5f7f4;--panel:#fff;--line:#e2eae3;--text:#22332e;--muted:#74827c;--accent:#28755d;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.owner-cabinet .cabinet-shell{display:grid;grid-template-columns:245px minmax(0,1fr);min-height:100vh}
+.owner-cabinet .cabinet-sidebar{background:#173f35;color:#eef7f0;padding:30px 18px;display:flex;flex-direction:column}
+.owner-cabinet .cabinet-brand{font-size:23px;font-weight:750;line-height:1.15;margin-bottom:35px}
+.owner-cabinet .cabinet-brand small{display:block;font-size:12px;font-weight:450;color:#c2d7cc;margin-top:8px}
+.owner-cabinet .cabinet-nav{display:block;color:#dcebe3;text-decoration:none;border-radius:12px;padding:14px 16px;margin:5px 0;font-size:14px}
+.owner-cabinet .cabinet-nav.active,.owner-cabinet .cabinet-nav:hover{background:#2e6655;color:#fff}
+.owner-cabinet .cabinet-note{font-size:12px;color:#c2d7cc;margin-top:auto}
+.owner-cabinet .cabinet-content{min-width:0}
+.owner-cabinet header{max-width:none;border:0;padding:20px 34px;justify-content:space-between}
+.owner-cabinet .cabinet-top-label{color:#74827c;font-size:13px}
+.owner-cabinet main{max-width:1480px;padding:15px 34px 65px}
+.owner-cabinet .cabinet-eyebrow{font-size:12px;letter-spacing:1.8px;color:#719082;font-weight:700}
+.owner-cabinet h1{font-size:32px;letter-spacing:-1px;margin:8px 0}
+.owner-cabinet h2{font-size:20px}
+.owner-cabinet .panel{border:1px solid #e7ede7;border-radius:17px;box-shadow:0 8px 30px #153c2d08;margin:20px 0}
+.owner-cabinet button{color:#fff}
+.owner-cabinet button.secondary{color:#325747;background:#fff;border-color:#dce6de}
+.owner-cabinet input:not([type=checkbox]),.owner-cabinet textarea{background:#fff;color:#22332e;border-color:#d5e2d9}
+.owner-cabinet .badge{color:#27764f}
+.owner-cabinet :focus-visible{outline-color:#39856a}
+@media(max-width:980px){.owner-cabinet .cabinet-shell{grid-template-columns:1fr}.owner-cabinet .cabinet-sidebar{padding:15px 18px}.owner-cabinet .cabinet-brand{margin:0 0 10px}.owner-cabinet .cabinet-sidebar nav{display:flex;overflow:auto;gap:4px}.owner-cabinet .cabinet-nav{white-space:nowrap;margin:0;padding:10px}.owner-cabinet .cabinet-note{display:none}.owner-cabinet header{padding:15px 22px}.owner-cabinet main{padding:16px 22px 50px}}
+@media(max-width:520px){.owner-cabinet main{padding:14px 16px 45px}.owner-cabinet header{padding:14px 16px}.owner-cabinet h1{font-size:26px}.owner-cabinet .panel{padding:16px}}
