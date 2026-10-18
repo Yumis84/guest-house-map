@@ -26,7 +26,8 @@ async function load(){
     const {data:version,error:ve}=await client.rpc('owner_cabinet_version');
     if(ve||![1,2].includes(version)){show('Кабинет ожидает настройки','Серверное обновление ещё не установлено. Управление объектами пока недоступно.');return;}
     publicationReady=version===2;
-    const {data,error}=await client.from('properties').select('id,company_id,name,description,published,contact_phone,contact_email,website_url,owner_revision,contact_confirmed_at').in('company_id',members.map(m=>m.company_id)).order('name');
+    const columns='id,company_id,name,description,published,contact_phone,contact_email,website_url,owner_revision'+(publicationReady?',contact_confirmed_at':'');
+    const {data,error}=await client.from('properties').select(columns).in('company_id',members.map(m=>m.company_id)).order('name');
     if(error)throw error;if(token!==epoch)return;
     items=(data||[]).filter(p=>members.some(m=>m.company_id===p.company_id));
     show('Мои объекты',items.length?'Выберите объект для просмотра или редактирования.':'У вашей компании пока нет объектов.');
@@ -99,7 +100,7 @@ $('#propertyForm').onsubmit=async event=>{
   editorBusy(true);$('#editorStatus').textContent='Сохраняем…';
   try{
     await ensureUser();
-    const {data,error}=await client.from('properties').update(patch).eq('id',p.id).eq('company_id',p.company_id).eq('owner_revision',p.owner_revision).select('id,company_id,name,description,published,contact_phone,contact_email,website_url,owner_revision,contact_confirmed_at').maybeSingle();
+    const {data,error}=await client.from('properties').update(patch).eq('id',p.id).eq('company_id',p.company_id).eq('owner_revision',p.owner_revision).select('id,company_id,name,description,published,contact_phone,contact_email,website_url,owner_revision'+(publicationReady?',contact_confirmed_at':'')).maybeSingle();
     if(error)throw error;if(token!==epoch)return;
     if(!data){$('#editorStatus').textContent='Объект изменён другим пользователем или доступ отозван. Обновите список перед повторным сохранением.';return;}
     selected=data;items=items.map(x=>x.id===data.id?data:x);dirty=false;render();$('#editorTitle').textContent=data.name;$('#editorStatus').textContent='Изменения сохранены.';
