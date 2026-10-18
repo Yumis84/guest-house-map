@@ -7,8 +7,9 @@ test('public config rejects secret/service-role and remote cleartext',()=>{
 });
 test('patch is an allowlist and validates unsafe inputs',()=>{
  const p=propertyPatch({name:' House ',company_id:'forged',owner_revision:999,published:true});
- assert.deepEqual(Object.keys(p),['name','description','contact_phone','contact_email','website_url','published']);
+ assert.deepEqual(Object.keys(p),['name','description','contact_phone','contact_email','website_url']);
  assert.equal(p.name,'House');
+ assert.equal(Object.hasOwn(p,'published'),false);
  for(const website_url of ['javascript:alert(1)','https://user:pass@example.com','data:text/html,a'])assert.throws(()=>propertyPatch({name:'A',website_url}));
  assert.throws(()=>propertyPatch({name:' '}));
  assert.equal(canEdit('viewer'),false);assert.equal(canEdit('owner'),true);assert.equal(canEdit('unknown'),false);
