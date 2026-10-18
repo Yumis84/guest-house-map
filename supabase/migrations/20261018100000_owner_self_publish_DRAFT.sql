@@ -11,12 +11,15 @@ revoke all on public.platform_admins from anon, authenticated, public;
 drop policy if exists published_properties_read on public.properties;
 revoke select on public.properties from anon, authenticated;
 grant select (id,company_id,name,description,published,contact_phone,contact_email,website_url,owner_revision,contact_confirmed_at,published_at) on public.properties to authenticated;
+-- Any change to public contact details invalidates previous owner consent.
+-- Only confirm_property_contacts() can make imported or edited contacts public.
 create or replace function public.trg_contact_origin() returns trigger language plpgsql set search_path='' as $$
 begin
-  if (new.contact_phone is distinct from old.contact_phone or new.contact_email is distinct from old.contact_email) and (select auth.uid()) is not null then
-    new.contact_confirmed_at := case when coalesce(new.contact_phone,new.contact_email) is null then null else now() end;
-  end if;
-  return new;
+ if new.contact_phone is distinct from old.contact_phone
+    or new.contact_email is distinct from old.contact_email then
+   new.contact_confirmed_at := null;
+ end if;
+ return new;
 end $$;
 drop trigger if exists contact_origin on public.properties;
 create trigger contact_origin before update on public.properties for each row execute function public.trg_contact_origin();
