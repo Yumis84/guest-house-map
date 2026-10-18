@@ -28,3 +28,5 @@
 .owner-cabinet .cabinet-stat small{display:block;color:#74827c;font-size:13px}
 .owner-cabinet .cabinet-stat strong{display:block;font-size:29px;margin-top:9px;color:#22332e}
 @media(max-width:700px){.owner-cabinet .cabinet-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.owner-cabinet .cabinet-stat{padding:15px}.owner-cabinet .cabinet-stat strong{font-size:25px}}
+
+.owner-cabinet .cabinet-setup-notice{padding:12px 14px;background:#fff4dc;border:1px solid #ead4a6;border-radius:10px;color:#73551b;font-size:13px}
