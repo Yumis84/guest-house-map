@@ -58,5 +58,5 @@ ALTER TABLE pms_sandbox.units FORCE ROW LEVEL SECURITY;
 ALTER TABLE pms_sandbox.unit_resources FORCE ROW LEVEL SECURITY;
 ALTER TABLE pms_sandbox.reservations FORCE ROW LEVEL SECURITY;
 ALTER TABLE pms_sandbox.resource_allocations FORCE ROW LEVEL SECURITY;
-REVOKE ALL ON ALL TABLES IN SCHEMA pms_sandbox FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON ALL TABLES IN SCHEMA pms_sandbox FROM PUBLIC;
 COMMIT;
