@@ -32,7 +32,7 @@
 .catalog-combobox{position:relative}
 #localityOptions{position:absolute;top:calc(100% + 4px);left:0;right:0;max-height:220px;overflow-y:auto;z-index:10;background:#1b2a22;border:1px solid #66816e;border-radius:11px;box-shadow:0 10px 30px #0009}
 #localityOptions button{display:block;width:100%;text-align:left;border:0;border-radius:0;background:transparent;padding:12px;color:#fff}
-#localityOptions button:hover,#localityOptions button:focus-visible{background:#345440}
+#localityOptions button:hover,#localityOptions button:focus-visible,#localityOptions button.active{background:#345440}
 </style>
 <style id="gh-point-room-cards">
 #sheet .gh-room-cards{display:grid;gap:11px;margin:20px 0}
@@ -138,20 +138,21 @@ const geo=JSON.parse(localStorage.getItem('rominta_geo')||'{}');function markerI
 const localitySearch=$('#localitySearch'),localityOptions=$('#localityOptions');
 const normLocality=v=>String(v||'').trim().toLocaleLowerCase('ru').replace(/ё/g,'е');
 const catalogLocalities=()=>[...new Map(houses.filter(h=>h.localityId&&h.locality).map(h=>[h.localityId,{id:h.localityId,name:h.locality,district:h.localityDistrict||''}])).values()].sort((a,b)=>a.name.localeCompare(b.name,'ru'));
-let localityTimer=0;
-function closeLocality(){localityOptions.hidden=true;localitySearch.setAttribute('aria-expanded','false');localitySearch.removeAttribute('aria-activedescendant')}
+let localityTimer=0,activeLocalityOption=-1;
+function localityOptionButtons(){return [...localityOptions.querySelectorAll('[role="option"]')]}
+function setActiveLocalityOption(index){const buttons=localityOptionButtons();activeLocalityOption=buttons.length?Math.max(0,Math.min(index,buttons.length-1)):-1;buttons.forEach((b,i)=>{b.setAttribute('aria-selected',String(i===activeLocalityOption));b.classList.toggle('active',i===activeLocalityOption)});if(activeLocalityOption>=0){const el=buttons[activeLocalityOption];localitySearch.setAttribute('aria-activedescendant',el.id);el.scrollIntoView({block:'nearest'})}else localitySearch.removeAttribute('aria-activedescendant')}
+function closeLocality(){clearTimeout(localityTimer);localityOptions.hidden=true;activeLocalityOption=-1;localitySearch.setAttribute('aria-expanded','false');localitySearch.removeAttribute('aria-activedescendant')}
 function chooseLocality(loc){selectedLocality=loc?.id||'';localitySearch.value=loc?.name||'';closeLocality();render();localitySearch.focus()}
 function showLocalities(){const q=normLocality(localitySearch.value),list=catalogLocalities(),matches=list.filter(x=>normLocality(x.name).includes(q)||normLocality(x.district).includes(q));
 localityOptions.replaceChildren();
-const make=(label,loc)=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','option');b.setAttribute('aria-selected',String(selectedLocality===(loc?.id||'')));b.id='loc-option-'+localityOptions.children.length;b.textContent=label;b.onclick=()=>chooseLocality(loc);localityOptions.append(b)};
+const make=(label,loc)=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','option');b.setAttribute('aria-selected','false');b.id='loc-option-'+localityOptions.children.length;b.tabIndex=-1;b.textContent=label;b.addEventListener('pointerdown',e=>e.preventDefault());b.onclick=()=>chooseLocality(loc);localityOptions.append(b)};
 make('Все населённые пункты',null);
 matches.forEach(loc=>make(loc.name+(list.filter(x=>x.name===loc.name).length>1?' · '+loc.district:''),loc));
 if(q&&!matches.length){const note=document.createElement('div');note.style.padding='12px';note.textContent='Населённый пункт не найден';localityOptions.append(note)}
-localityOptions.hidden=false;localitySearch.setAttribute('aria-expanded','true')}
+localityOptions.hidden=false;localitySearch.setAttribute('aria-expanded','true');setActiveLocalityOption(-1)}
 localitySearch.addEventListener('focus',showLocalities);
 localitySearch.addEventListener('input',()=>{selectedLocality='';render();clearTimeout(localityTimer);localityTimer=setTimeout(showLocalities,120)});
-localitySearch.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLocality()}else if(e.key==='ArrowDown'){e.preventDefault();clearTimeout(localityTimer);showLocalities();localityOptions.querySelector('button')?.focus()}else if(e.key==='Enter'){e.preventDefault();const exact=catalogLocalities().find(x=>normLocality(x.name)===normLocality(localitySearch.value));if(exact)chooseLocality(exact);else showLocalities()}});
-localityOptions.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLocality();localitySearch.focus()}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const a=[...localityOptions.querySelectorAll('button')],i=a.indexOf(document.activeElement);a[(i+(e.key==='ArrowDown'?1:-1)+a.length)%a.length]?.focus()}else if(e.key==='Enter'&&document.activeElement?.tagName==='BUTTON'){document.activeElement.click()}});
+localitySearch.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLocality()}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();clearTimeout(localityTimer);if(localityOptions.hidden)showLocalities();const n=localityOptionButtons().length;if(n)setActiveLocalityOption(activeLocalityOption<0?(e.key==='ArrowDown'?0:n-1):(activeLocalityOption+(e.key==='ArrowDown'?1:-1)+n)%n)}else if(e.key==='Enter'){e.preventDefault();if(!localityOptions.hidden&&activeLocalityOption>=0){localityOptionButtons()[activeLocalityOption]?.click()}else{const exact=catalogLocalities().find(x=>normLocality(x.name)===normLocality(localitySearch.value));if(exact)chooseLocality(exact);else showLocalities()}}});
 document.addEventListener('click',e=>{if(!e.target.closest('.catalog-combobox')){closeLocality();if(!selectedLocality)localitySearch.value=''}});
 $('#propertyTypeFilter').addEventListener('change',e=>{selectedPropertyType=e.target.value;render()});
 $('#resetCatalogFilters').addEventListener('click',()=>{selectedLocality='';selectedPropertyType='';localitySearch.value='';$('#propertyTypeFilter').value='';closeLocality();render()});
