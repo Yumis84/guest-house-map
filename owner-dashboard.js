@@ -1,10 +1,10 @@
 import {getClient,canEdit,propertyPatch,photoPath,preparePhoto,BUCKET,errorMessage} from './owner-common.js';
 const $=s=>document.querySelector(s);
-let client,user,items=[],members=[],selected=null,epoch=0,busy=false,dirty=false,signingOut=false;
+let client,user,items=[],members=[],selected=null,epoch=0,busy=false,dirty=false,signingOut=false,publicationReady=false;
 function show(title,text){$('#heading').textContent=title;$('#message').textContent=text;}
-function clearPrivate(){epoch++;items=[];members=[];selected=null;dirty=false;$('#properties').replaceChildren();$('#photos').replaceChildren();$('#editor').hidden=true;$('#propertyForm').reset();$('#photo').value='';}
+function clearPrivate(){epoch++;items=[];members=[];selected=null;dirty=false;$('#properties').replaceChildren();$('#photos').replaceChildren();$('#editor').hidden=true;$('#publishToggle').hidden=true;$('#confirmContacts').hidden=true;$('#publicationStatus').textContent='';$('#propertyForm').reset();$('#photo').value='';}
 function expired(){clearPrivate();location.replace('./login.html');}
-function editorBusy(value){busy=value;$('#fields').disabled=value||!selected||!canEdit(members.find(m=>m.company_id===selected.company_id)?.member_role);$('#save').disabled=$('#fields').disabled;$('#upload').disabled=$('#fields').disabled;$('#photo').disabled=$('#fields').disabled;$('#cancel').disabled=value;$('#signout').disabled=value;$('#reload').disabled=value;$('#photos').querySelectorAll('button').forEach(b=>b.disabled=value);}
+function editorBusy(value){busy=value;$('#fields').disabled=value||!selected||!canEdit(members.find(m=>m.company_id===selected.company_id)?.member_role);$('#save').disabled=$('#fields').disabled;$('#upload').disabled=$('#fields').disabled;$('#photo').disabled=$('#fields').disabled;$('#cancel').disabled=value;$('#signout').disabled=value;$('#reload').disabled=value;$('#photos').querySelectorAll('button').forEach(b=>b.disabled=value);$('#publishToggle').disabled=value||!selected||!publicationReady||!['owner','admin'].includes(members.find(m=>m.company_id===selected.company_id)?.member_role);$('#confirmContacts').disabled=$('#publishToggle').disabled;}
 function leave(){if(dirty&&!confirm('Закрыть без сохранения изменений?'))return;epoch++;selected=null;dirty=false;$('#editor').hidden=true;$('#photos').replaceChildren();$('#propertyForm').reset();$('#photo').value='';}
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
@@ -24,8 +24,9 @@ async function load(){
     if(me)throw me;if(token!==epoch)return;members=membership||[];
     if(!members.length){show('Доступ к объектам пока не выдан','Администратор должен подтвердить владельца и привязать аккаунт к компании. Регистрация не назначает права автоматически.');return;}
     const {data:version,error:ve}=await client.rpc('owner_cabinet_version');
-    if(ve||version!==1){show('Кабинет ожидает настройки','Серверное обновление ещё не установлено. Управление объектами пока недоступно.');return;}
-    const {data,error}=await client.from('properties').select('id,company_id,name,description,published,contact_phone,contact_email,website_url,owner_revision').in('company_id',members.map(m=>m.company_id)).order('name');
+    if(ve||![1,2].includes(version)){show('Кабинет ожидает настройки','Серверное обновление ещё не установлено. Управление объектами пока недоступно.');return;}
+    publicationReady=version===2;
+    const {data,error}=await client.from('properties').select('id,company_id,name,description,published,contact_phone,contact_email,website_url,owner_revision,contact_confirmed_at').in('company_id',members.map(m=>m.company_id)).order('name');
     if(error)throw error;if(token!==epoch)return;
     items=(data||[]).filter(p=>members.some(m=>m.company_id===p.company_id));
     show('Мои объекты',items.length?'Выберите объект для просмотра или редактирования.':'У вашей компании пока нет объектов.');
@@ -48,6 +49,10 @@ function open(p){
   $('#editor').hidden=false;$('#editorTitle').textContent=p.name;$('#editorStatus').textContent='';
   for(const key of ['name','description','contact_phone','contact_email','website_url'])$('#'+key).value=p[key]||'';
   $('#photo').value='';
+  const publisher=['owner','admin'].includes(members.find(m=>m.company_id===p.company_id)?.member_role);
+  $('#publishToggle').hidden=!publicationReady||!publisher;$('#confirmContacts').hidden=!publicationReady||!publisher;
+  $('#publishToggle').textContent=p.published?'Снять с публикации':'Опубликовать';
+  $('#publicationStatus').textContent=publicationReady?(p.contact_confirmed_at?'Публичность контактов подтверждена.':'Контакты пока не подтверждены для публикации.'):'Публикация будет доступна после серверного обновления.';
   const editable=canEdit(members.find(m=>m.company_id===p.company_id)?.member_role);
   $('#uploadControls').hidden=!editable;editorBusy(false);
   if(!editable)$('#editorStatus').textContent='Доступ только для просмотра.';
@@ -94,7 +99,7 @@ $('#propertyForm').onsubmit=async event=>{
   editorBusy(true);$('#editorStatus').textContent='Сохраняем…';
   try{
     await ensureUser();
-    const {data,error}=await client.from('properties').update(patch).eq('id',p.id).eq('company_id',p.company_id).eq('owner_revision',p.owner_revision).select('id,company_id,name,description,published,contact_phone,contact_email,website_url,owner_revision').maybeSingle();
+    const {data,error}=await client.from('properties').update(patch).eq('id',p.id).eq('company_id',p.company_id).eq('owner_revision',p.owner_revision).select('id,company_id,name,description,published,contact_phone,contact_email,website_url,owner_revision,contact_confirmed_at').maybeSingle();
     if(error)throw error;if(token!==epoch)return;
     if(!data){$('#editorStatus').textContent='Объект изменён другим пользователем или доступ отозван. Обновите список перед повторным сохранением.';return;}
     selected=data;items=items.map(x=>x.id===data.id?data:x);dirty=false;render();$('#editorTitle').textContent=data.name;$('#editorStatus').textContent='Изменения сохранены.';
@@ -111,6 +116,23 @@ $('#upload').onclick=async()=>{
   }catch(error){if(token===epoch)$('#photoStatus').textContent=error?.message?.match(/фото|JPEG|разрешение/)?error.message:errorMessage(error);}
   finally{editorBusy(false);}
 };
+async function publicationAction(kind){
+ if(busy||dirty||!selected||!publicationReady)return;
+ const p=selected,token=epoch;
+ editorBusy(true);$('#publicationStatus').textContent='Выполняем действие…';
+ try{
+  await ensureUser();
+  const action=kind==='publish'?'set_property_published':'confirm_property_contacts';
+  const args=kind==='publish'?{p_property:p.id,p_published:!p.published}:{p_property:p.id};
+  const {error}=await client.rpc(action,args);if(error)throw error;
+  if(token!==epoch)return;
+  $('#publicationStatus').textContent='Изменение сохранено. Обновляем список…';
+  editorBusy(false);await load();
+ }catch(error){if(token===epoch)$('#publicationStatus').textContent=errorMessage(error);}
+ finally{editorBusy(false);}
+}
+$('#publishToggle').onclick=()=>publicationAction('publish');
+$('#confirmContacts').onclick=()=>publicationAction('confirm');
 $('#reload').onclick=load;
 try{
   client=getClient();
