@@ -1,117 +1,13 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <title>Демо кабинета владельца</title>
-  <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-  <header class="topbar">
-    <div>
-      <span class="eyebrow">Краснолесье · локальное демо</span>
-      <h1>Кабинет размещающего</h1>
-    </div>
-    <button id="resetDemo" class="button button-quiet" type="button">Сбросить демо</button>
-  </header>
-
-  <main>
-    <p class="notice" role="note">
-      <strong>Изолированный предпросмотр.</strong> Данные остаются только в localStorage этого браузера.
-      Демо не подключается к внешней базе, не создаёт бронирований и не изменяет каталог.
-    </p>
-
-    <div class="layout">
-      <aside class="panel sidebar" aria-label="Объекты">
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">Портфолио</span>
-            <h2>Мои объекты</h2>
-          </div>
-          <button id="addListing" class="button button-small" type="button">+ Добавить</button>
-        </div>
-        <div id="listingList" class="listing-list"></div>
-      </aside>
-
-      <section class="panel workspace">
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">Редактор объявления</span>
-            <h2 id="editorTitle">Новый объект</h2>
-          </div>
-          <span id="saveState" class="save-state" role="status">Сохранено локально</span>
-        </div>
-
-        <form id="listingForm">
-          <div class="grid two-columns">
-            <label>
-              Название
-              <input id="name" name="name" maxlength="100" required>
-            </label>
-            <label>
-              Населённый пункт
-              <input id="locality" name="locality" maxlength="100" required>
-            </label>
-            <label>
-              Категория
-              <select id="category" name="category" required>
-                <option value="guest_house">Гостевой дом</option>
-                <option value="apartment">Апартаменты</option>
-              </select>
-            </label>
-            <label>
-              Роль размещающего
-              <select id="role" name="role" required>
-                <option value="owner">Владелец</option>
-                <option value="intermediary">Посредник</option>
-              </select>
-            </label>
-            <label>
-              Цена за ночь, ₽
-              <input id="price" name="price" type="number" min="1" max="1000000" required>
-            </label>
-            <label>
-              Гостей
-              <input id="guests" name="guests" type="number" min="1" max="50" required>
-            </label>
-          </div>
-
-          <label>
-            Описание
-            <textarea id="description" name="description" rows="5" maxlength="2000"></textarea>
-          </label>
-
-          <div class="grid two-columns">
-            <label>
-              Телефон для гостей
-              <input id="phone" name="phone" type="tel" maxlength="40" placeholder="+7 900 000-00-00">
-            </label>
-            <label>
-              Email для гостей
-              <input id="email" name="email" type="email" maxlength="120" placeholder="owner@example.test">
-            </label>
-          </div>
-
-          <label class="checkbox-row">
-            <input id="available" name="available" type="checkbox">
-            Открыто для заявок в рамках демо
-          </label>
-
-          <div class="actions">
-            <button class="button" type="submit">Сохранить</button>
-            <button id="togglePublish" class="button button-secondary" type="button">Опубликовать в демо</button>
-          </div>
-        </form>
-
-        <section class="guest-preview" aria-labelledby="guestPreviewTitle">
-          <span class="eyebrow">Как увидит гость</span>
-          <div id="guestPreview"></div>
-        </section>
-      </section>
-    </div>
-  </main>
-
-  <script type="module" src="./app.js"></script>
-</body>
-</html>
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Демо кабинета владельца</title><link rel="stylesheet" href="./styles.css"></head><body>
+<header class="topbar"><div><span class="eyebrow">Краснолесье · локальное демо</span><h1>Создание объявления</h1></div><button id="resetDemo" class="button button-quiet" type="button">Сбросить демо</button></header>
+<main><p class="notice"><strong>Изолированный предпросмотр.</strong> Текст хранится в localStorage, фотографии — в IndexedDB этого браузера. Ничего не отправляется на сервер и не изменяет рабочий каталог.</p><div class="layout">
+<aside class="panel sidebar" aria-label="Объекты"><div class="section-heading"><div><span class="eyebrow">Портфолио</span><h2>Мои объекты</h2></div><button id="addListing" class="button button-small" type="button">+ Добавить</button></div><div id="listingList" class="listing-list"></div></aside>
+<section class="panel workspace"><div class="section-heading"><div><span class="eyebrow">Черновик</span><h2 id="editorTitle">Новый объект</h2></div><span id="saveState" class="save-state" role="status">Сохранено локально</span></div>
+<ol class="stepper" aria-label="Этапы создания"><li data-step-label="0" aria-current="step"><span>1</span>Основа</li><li data-step-label="1"><span>2</span>Размещение</li><li data-step-label="2"><span>3</span>Условия</li><li data-step-label="3"><span>4</span>Фото</li><li data-step-label="4"><span>5</span>Просмотр</li></ol><p id="stepProgress" class="mobile-progress">Шаг 1 из 5 · Основа</p>
+<form id="listingForm" novalidate autocomplete="off">
+<section class="form-step" data-step="0"><h3>Что вы предлагаете?</h3><fieldset class="choice-cards"><legend>Категория</legend><label><input type="radio" name="category" value="guest_house" checked><span><strong>Гостевой дом</strong><small>Дом или коттедж целиком</small></span></label><label><input type="radio" name="category" value="apartment"><span><strong>Апартаменты</strong><small>Квартира в жилом доме</small></span></label></fieldset><div class="grid two-columns"><label>Название<input id="name" maxlength="100" required></label><label>Населённый пункт<input id="locality" maxlength="100" required></label></div><label>Роль размещающего<select id="role"><option value="owner">Владелец</option><option value="intermediary">Уполномоченный посредник</option></select></label><label>Описание<textarea id="description" rows="5" maxlength="2000"></textarea></label></section>
+<section class="form-step" data-step="1" hidden><h3>Параметры размещения</h3><div class="grid number-grid"><label>Комнат<input id="rooms" type="number" min="1" max="50" required></label><label>Спален<input id="bedrooms" type="number" min="0" max="30" required></label><label>Кроватей<input id="beds" type="number" min="1" max="50" required></label><label>Гостей<input id="capacity" type="number" min="1" max="50" required></label><label>Площадь, м²<input id="area" type="number" min="5" max="5000" required></label></div><div id="apartmentFloors" class="grid two-columns" hidden><label>Этаж квартиры<input id="floor" type="number" min="1" max="200"></label><label>Этажей в доме<input id="buildingFloors" type="number" min="1" max="200"></label></div><fieldset><legend>Удобства</legend><div id="amenityOptions" class="checkbox-grid"></div></fieldset></section>
+<section class="form-step" data-step="2" hidden><h3>Правила и цена</h3><div class="grid two-columns"><label>Заезд с<input id="checkIn" type="time" required></label><label>Выезд до<input id="checkOut" type="time" required></label><label>Депозит, ₽<input id="deposit" type="number" min="0" max="1000000" step="100" required></label><label>Минимум ночей<input id="minNights" type="number" min="1" max="365" required></label><label>Цена за ночь, ₽<input id="price" type="number" min="1" max="1000000" required></label></div><fieldset><legend>Правила проживания</legend><div class="checkbox-grid"><label><input id="children" type="checkbox">Можно с детьми</label><label><input id="pets" type="checkbox">Можно с животными</label><label><input id="smoking" type="checkbox">Можно курить</label><label><input id="events" type="checkbox">Можно проводить мероприятия</label></div></fieldset><label class="checkbox-row"><input id="available" type="checkbox">Открыто для заявок в демо</label></section>
+<section class="form-step" data-step="3" hidden><h3>Фотографии</h3><p class="help">До 10 фото JPEG, PNG или WebP, не более 10 МБ каждое. Первое фото становится обложкой; порядок можно менять.</p><label class="upload-zone">Добавить фотографии<input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label><p id="photoStatus" class="help" role="status">Фотографий пока нет.</p><div id="photoGrid" class="photo-grid"></div></section>
+<section class="form-step" data-step="4" hidden><h3>Как объявление увидит гость</h3><div id="guestPreview" class="guest-preview"></div></section><p id="validationMessage" class="validation" role="alert"></p><div class="wizard-actions"><button id="prevStep" class="button button-secondary" type="button">← Назад</button><button id="nextStep" class="button" type="button">Далее →</button><button id="saveListing" class="button" type="submit" hidden>Сохранить</button><button id="togglePublish" class="button button-secondary" type="button" hidden>Опубликовать в демо</button></div></form>
+</section></div></main><script type="module" src="./app.js"></script></body></html>

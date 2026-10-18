@@ -1,237 +1,46 @@
-const STORAGE_KEY = 'guest-house-owner-preview-v1';
-
-const seedListings = [
-  {
-    id: 'demo-guest-house',
-    name: 'Дом у лесной тропы',
-    locality: 'Краснолесье',
-    category: 'guest_house',
-    role: 'owner',
-    price: 5200,
-    guests: 6,
-    description: 'Тихий гостевой дом для локальной демонстрации кабинета.',
-    phone: '',
-    email: '',
-    available: true,
-    published: true
-  },
-  {
-    id: 'demo-apartment',
-    name: 'Апартаменты у озера',
-    locality: 'Чистые Пруды',
-    category: 'apartment',
-    role: 'intermediary',
-    price: 3900,
-    guests: 3,
-    description: 'Второй вымышленный объект — данные не отправляются на сервер.',
-    phone: '',
-    email: '',
-    available: false,
-    published: false
-  }
+const STORAGE_KEY='guest-house-owner-preview-v1',DB_NAME='guest-house-owner-preview-media',MAX_PHOTOS=10,MAX_PHOTO_BYTES=10_000_000;
+const AMENITIES={guest_house:['Баня','Мангал','Терраса','Парковка','Кухня','Wi-Fi','Камин','Детская площадка'],apartment:['Лифт','Балкон','Кондиционер','Стиральная машина','Парковка','Кухня','Wi-Fi','Рабочее место']};
+const STEPS=['Основа','Размещение','Условия','Фото','Просмотр'],$=id=>document.getElementById(id),form=$('listingForm');
+const texts=['name','locality','role','description','checkIn','checkOut'],numbers=['rooms','bedrooms','beds','capacity','area','floor','buildingFloors','deposit','minNights','price'],flags=['children','pets','smoking','events','available'];
+const seeds=[
+ {id:'demo-guest-house',name:'Дом у лесной тропы',locality:'Краснолесье',category:'guest_house',role:'owner',description:'Тихий гостевой дом рядом с лесом.',rooms:4,bedrooms:2,beds:4,capacity:6,area:96,floor:null,buildingFloors:null,amenities:['Баня','Мангал','Парковка','Wi-Fi'],checkIn:'15:00',checkOut:'12:00',children:true,pets:true,smoking:false,events:false,deposit:5000,minNights:2,price:5200,available:true,published:true,photoIds:[]},
+ {id:'demo-apartment',name:'Апартаменты у озера',locality:'Чистые Пруды',category:'apartment',role:'intermediary',description:'Светлая квартира для спокойного отдыха.',rooms:2,bedrooms:1,beds:2,capacity:3,area:48,floor:3,buildingFloors:5,amenities:['Балкон','Кухня','Wi-Fi'],checkIn:'14:00',checkOut:'11:00',children:true,pets:false,smoking:false,events:false,deposit:3000,minNights:1,price:3900,available:false,published:false,photoIds:[]}
 ];
+let saveTimer,photoGridUrls=[],previewUrls=[];
+const cloneSeeds=()=>seeds.map(item=>structuredClone(item));
+function normalize(raw,index=0){const category=raw?.category==='apartment'?'apartment':'guest_house',fallback=seeds[category==='apartment'?1:0],num=(value,other)=>Number.isFinite(Number(value))?Number(value):other;return{...raw,id:typeof raw?.id==='string'?raw.id:`migrated-${index}`,name:typeof raw?.name==='string'?raw.name:fallback.name,locality:typeof raw?.locality==='string'?raw.locality:fallback.locality,category,role:['owner','intermediary'].includes(raw?.role)?raw.role:'owner',description:typeof raw?.description==='string'?raw.description:'',rooms:num(raw?.rooms,category==='apartment'?2:4),bedrooms:num(raw?.bedrooms,1),beds:num(raw?.beds,2),capacity:num(raw?.capacity??raw?.guests,2),area:num(raw?.area,category==='apartment'?45:80),floor:category==='apartment'?num(raw?.floor,1):null,buildingFloors:category==='apartment'?num(raw?.buildingFloors,1):null,amenities:Array.isArray(raw?.amenities)?raw.amenities.filter(v=>typeof v==='string'):[],checkIn:raw?.checkIn||'15:00',checkOut:raw?.checkOut||'12:00',children:raw?.children!==false,pets:raw?.pets===true,smoking:raw?.smoking===true,events:raw?.events===true,deposit:Math.max(0,num(raw?.deposit,0)),minNights:Math.max(1,num(raw?.minNights,1)),price:Math.max(1,num(raw?.price,4500)),available:raw?.available===true,published:raw?.published===true,photoIds:Array.isArray(raw?.photoIds)?raw.photoIds.filter(v=>typeof v==='string'):[]}}
+function load(){try{const p=JSON.parse(localStorage.getItem(STORAGE_KEY));if(p&&Array.isArray(p.listings)&&p.listings.length){const listings=p.listings.slice(0,50).map(normalize);return{...p,listings,selectedId:listings.some(x=>x.id===p.selectedId)?p.selectedId:listings[0].id,step:Math.max(0,Math.min(4,Number(p.step)||0))}}}catch{/* malformed or blocked storage */}const listings=cloneSeeds();return{listings,selectedId:listings[0].id,step:0}}
+let state=load();const current=()=>state.listings.find(x=>x.id===state.selectedId)||state.listings[0];
+function persist(message='Сохранено локально'){clearTimeout(saveTimer);try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));$('saveState').textContent=message}catch{$('saveState').textContent='Не удалось сохранить черновик'}}
+const category=()=>form.querySelector('[name="category"]:checked').value;
+function readForm(){const x=current();x.category=category();texts.forEach(id=>x[id]=$(id).value.trim());numbers.forEach(id=>x[id]=$(id).value===''?null:Number($(id).value));flags.forEach(id=>x[id]=$(id).checked);x.amenities=[...$('amenityOptions').querySelectorAll('input:checked')].map(i=>i.value);if(x.category!=='apartment'){x.floor=null;x.buildingFloors=null}}
+function scheduleSave(){readForm();renderList();renderPreview();$('editorTitle').textContent=current().name||'Без названия';$('saveState').textContent='Сохраняем…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist(),300)}
+function renderAmenities(selected=[]){const box=$('amenityOptions');box.replaceChildren();for(const value of AMENITIES[category()]){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=value;input.checked=selected.includes(value);label.append(input,document.createTextNode(value));box.append(label)}}
+function applyCategory(selected){const apartment=category()==='apartment';$('apartmentFloors').hidden=!apartment;['floor','buildingFloors'].forEach(id=>$(id).required=apartment);renderAmenities(selected)}
+function renderForm(){const x=current();form.querySelector(`[name="category"][value="${x.category}"]`).checked=true;texts.forEach(id=>$(id).value=x[id]??'');numbers.forEach(id=>$(id).value=x[id]??'');flags.forEach(id=>$(id).checked=Boolean(x[id]));applyCategory(x.amenities);$('editorTitle').textContent=x.name||'Без названия'}
+const categoryLabel=value=>value==='apartment'?'Апартаменты':'Гостевой дом';
+function renderList(){const box=$('listingList');box.replaceChildren();for(const x of state.listings){const button=document.createElement('button');button.type='button';button.className='listing-card';button.setAttribute('aria-current',String(x.id===state.selectedId));const strong=document.createElement('strong'),span=document.createElement('span');strong.textContent=x.name||'Без названия';span.textContent=`${categoryLabel(x.category)} · ${x.published?'опубликовано в демо':'черновик'}`;button.append(strong,span);button.onclick=()=>selectListing(x.id);box.append(button)}}
 
-const $ = (id) => document.getElementById(id);
-const form = $('listingForm');
-const fields = ['name', 'locality', 'category', 'role', 'price', 'guests', 'description', 'phone', 'email', 'available'];
-let state = loadState();
-let saveTimer;
+function openDb(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window))return reject(new Error('IndexedDB unavailable'));const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=()=>{const store=request.result.createObjectStore('photos',{keyPath:'id'});store.createIndex('listingId','listingId')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
+async function dbWrite(action){const db=await openDb();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');action(tx.objectStore('photos'));tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)}})}
+const putPhoto=record=>dbWrite(store=>store.put(record));const deletePhoto=id=>dbWrite(store=>store.delete(id));
+async function deleteListingPhotos(id){const db=await openDb();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite'),request=tx.objectStore('photos').index('listingId').openCursor(IDBKeyRange.only(id));request.onsuccess=()=>{const cursor=request.result;if(cursor){cursor.delete();cursor.continue()}};tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)}})}
+async function getPhotos(ids){if(!ids.length)return[];const db=await openDb();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly'),store=tx.objectStore('photos'),map=new Map();ids.forEach(id=>{const r=store.get(id);r.onsuccess=()=>{if(r.result)map.set(id,r.result)}});tx.oncomplete=()=>{db.close();resolve(ids.map(id=>map.get(id)).filter(Boolean))};tx.onerror=()=>{db.close();reject(tx.error)}})}
+function revokeUrls(urls){urls.forEach(URL.revokeObjectURL);urls.length=0}function makeUrl(blob,urls){const url=URL.createObjectURL(blob);urls.push(url);return url}
+async function renderPhotos(){const listing=current(),listingId=listing.id;revokeUrls(photoGridUrls);let records=[];try{records=await getPhotos(listing.photoIds)}catch{$('photoStatus').textContent='Хранилище фото недоступно. Текстовый черновик сохранён.'}if(current().id!==listingId)return;const found=new Set(records.map(x=>x.id));if(listing.photoIds.some(id=>!found.has(id))){listing.photoIds=listing.photoIds.filter(id=>found.has(id));persist()}const grid=$('photoGrid');grid.replaceChildren();records.forEach((record,index)=>{const tile=document.createElement('article');tile.className='photo-tile';const img=document.createElement('img');img.src=makeUrl(record.blob,photoGridUrls);img.alt=`Фото ${index+1}: ${record.name}`;tile.append(img);if(index===0){const badge=document.createElement('span');badge.className='cover-badge';badge.textContent='Обложка';tile.append(badge)}const controls=document.createElement('div');controls.className='photo-controls';const actions=[['←','Переместить фото влево',()=>movePhoto(index,index-1),index===0],['→','Переместить фото вправо',()=>movePhoto(index,index+1),index===records.length-1],['Обложка','Сделать фото обложкой',()=>movePhoto(index,0),index===0],['×','Удалить фото',()=>removePhoto(record.id),false]];for(const [text,label,fn,disabled] of actions){const b=document.createElement('button');b.type='button';b.textContent=text;b.ariaLabel=label;b.disabled=disabled;b.onclick=fn;controls.append(b)}tile.append(controls);grid.append(tile)});$('photoStatus').textContent=records.length?`Загружено фото: ${records.length} из ${MAX_PHOTOS}.`:'Фотографий пока нет.';renderPreview(records)}
+function movePhoto(from,to){const ids=current().photoIds;if(to<0||to>=ids.length||from===to)return;const [id]=ids.splice(from,1);ids.splice(to,0,id);persist('Порядок фото сохранён');renderPhotos()}
+async function removePhoto(id){const x=current();x.photoIds=x.photoIds.filter(v=>v!==id);persist('Фото удалено');try{await deletePhoto(id)}catch{$('photoStatus').textContent='Не удалось удалить файл из локального хранилища.'}renderPhotos()}
+function add(tag,parent,text,className){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;parent.append(n);return n}
+async function renderPreview(preloaded){const box=$('guestPreview'),x=current();revokeUrls(previewUrls);box.replaceChildren();let photos=preloaded;if(!photos){try{photos=await getPhotos(x.photoIds.slice(0,3))}catch{photos=[]}if(x!==current())return}if(photos.length){const gallery=add('div',box,undefined,'guest-gallery');photos.slice(0,3).forEach((p,i)=>{const img=document.createElement('img');img.src=makeUrl(p.blob,previewUrls);img.alt=i?'Фото жилья':'Обложка объявления';gallery.append(img)})}const content=add('div',box,undefined,'guest-content');add('h4',content,x.name||'Без названия');add('p',content,`${categoryLabel(x.category)} · ${x.locality||'Место не указано'}`,'guest-meta');add('p',content,x.description||'Описание пока не добавлено.');const details=[`${x.rooms} комнат`,`${x.bedrooms} спален`,`${x.beds} кроватей`,`до ${x.capacity} гостей`,`${x.area} м²`];if(x.category==='apartment')details.push(`${x.floor} из ${x.buildingFloors} этажей`);add('p',content,details.join(' · '));const tags=add('div',content,undefined,'tag-list');x.amenities.forEach(v=>add('span',tags,v));const rules=[x.children?'с детьми':'без детей',x.pets?'с животными':'без животных',x.smoking?'курение разрешено':'не курить',x.events?'мероприятия разрешены':'без мероприятий'];add('p',content,`Заезд с ${x.checkIn}, выезд до ${x.checkOut} · ${rules.join(' · ')}`);add('strong',content,`${new Intl.NumberFormat('ru-RU').format(x.price)} ₽ за ночь · минимум ${x.minNights} ноч. · депозит ${new Intl.NumberFormat('ru-RU').format(x.deposit)} ₽`);add('p',content,x.published?(x.available?'Опубликовано · открыто для заявок':'Опубликовано · заявки закрыты'):'Предпросмотр черновика','guest-meta')}
 
-function cloneSeeds() {
-  return seedListings.map((listing) => ({ ...listing }));
-}
-
-function loadState() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (parsed && Array.isArray(parsed.listings) && parsed.listings.length > 0) {
-      const listings = parsed.listings.filter(isValidListing).slice(0, 50);
-      if (listings.length) {
-        const selectedId = listings.some(({ id }) => id === parsed.selectedId) ? parsed.selectedId : listings[0].id;
-        return { listings, selectedId };
-      }
-    }
-  } catch {
-    // Private browsing or malformed local data falls back to safe demo fixtures.
-  }
-  const listings = cloneSeeds();
-  return { listings, selectedId: listings[0].id };
-}
-
-function isValidListing(value) {
-  return value && typeof value.id === 'string' && typeof value.name === 'string'
-    && ['guest_house', 'apartment'].includes(value.category)
-    && ['owner', 'intermediary'].includes(value.role);
-}
-
-function currentListing() {
-  return state.listings.find(({ id }) => id === state.selectedId) || state.listings[0];
-}
-
-function persist(message = 'Сохранено локально') {
-  clearTimeout(saveTimer);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    $('saveState').textContent = message;
-  } catch {
-    $('saveState').textContent = 'LocalStorage недоступен';
-  }
-}
-
-function readForm() {
-  const listing = currentListing();
-  for (const id of fields) {
-    const element = $(id);
-    listing[id] = element.type === 'checkbox' ? element.checked : element.value;
-  }
-  listing.price = Number(listing.price);
-  listing.guests = Number(listing.guests);
-}
-
-function scheduleSave() {
-  readForm();
-  renderList();
-  renderGuestPreview();
-  $('editorTitle').textContent = currentListing().name || 'Без названия';
-  $('saveState').textContent = 'Сохраняем…';
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => persist(), 250);
-}
-
-function categoryLabel(category) {
-  return category === 'apartment' ? 'Апартаменты' : 'Гостевой дом';
-}
-
-function roleLabel(role) {
-  return role === 'intermediary' ? 'Посредник' : 'Владелец';
-}
-
-function renderList() {
-  const list = $('listingList');
-  list.replaceChildren();
-  for (const listing of state.listings) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'listing-card';
-    button.dataset.listingId = listing.id;
-    button.setAttribute('aria-current', String(listing.id === state.selectedId));
-    const name = document.createElement('strong');
-    name.textContent = listing.name || 'Без названия';
-    const meta = document.createElement('span');
-    meta.textContent = `${categoryLabel(listing.category)} · ${listing.published ? 'опубликовано в демо' : 'черновик'}`;
-    button.append(name, meta);
-    button.addEventListener('click', () => selectListing(listing.id));
-    list.append(button);
-  }
-}
-
-function renderForm() {
-  const listing = currentListing();
-  for (const id of fields) {
-    const element = $(id);
-    if (element.type === 'checkbox') element.checked = Boolean(listing[id]);
-    else element.value = listing[id] ?? '';
-  }
-  $('editorTitle').textContent = listing.name || 'Без названия';
-  $('togglePublish').textContent = listing.published ? 'Снять с публикации' : 'Опубликовать в демо';
-}
-
-function renderGuestPreview() {
-  const container = $('guestPreview');
-  const listing = currentListing();
-  container.replaceChildren();
-  if (!listing.published) {
-    const empty = document.createElement('p');
-    empty.className = 'empty';
-    empty.textContent = 'Черновик не показывается гостям.';
-    container.append(empty);
-    return;
-  }
-  const article = document.createElement('article');
-  const title = document.createElement('h3');
-  title.id = 'guestPreviewTitle';
-  title.textContent = listing.name || 'Без названия';
-  const meta = document.createElement('p');
-  meta.className = 'meta';
-  meta.textContent = `${categoryLabel(listing.category)} · ${roleLabel(listing.role)} · ${listing.locality || 'Место не указано'} · до ${listing.guests || 1} гостей`;
-  const description = document.createElement('p');
-  description.textContent = listing.description || 'Описание пока не добавлено.';
-  const price = document.createElement('strong');
-  price.textContent = `${new Intl.NumberFormat('ru-RU').format(listing.price || 0)} ₽ за ночь`;
-  article.append(title, meta, description, price);
-  if (listing.available) {
-    const availability = document.createElement('p');
-    availability.textContent = 'Открыто для заявок в демо';
-    article.append(availability);
-  }
-  container.append(article);
-}
-
-function selectListing(id) {
-  readForm();
-  state.selectedId = id;
-  persist();
-  render();
-}
-
-function render() {
-  renderList();
-  renderForm();
-  renderGuestPreview();
-}
-
-form.addEventListener('input', scheduleSave);
-form.addEventListener('change', scheduleSave);
-form.addEventListener('submit', (event) => {
-  event.preventDefault();
-  if (!form.reportValidity()) return;
-  readForm();
-  persist();
-  render();
-});
-
-$('addListing').addEventListener('click', () => {
-  readForm();
-  const id = `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  state.listings.push({
-    id,
-    name: 'Новый объект',
-    locality: 'Краснолесье',
-    category: 'guest_house',
-    role: 'owner',
-    price: 4500,
-    guests: 2,
-    description: '',
-    phone: '',
-    email: '',
-    available: false,
-    published: false
-  });
-  state.selectedId = id;
-  persist('Новый черновик сохранён локально');
-  render();
-  $('name').select();
-});
-
-$('togglePublish').addEventListener('click', () => {
-  if (!form.reportValidity()) return;
-  readForm();
-  currentListing().published = !currentListing().published;
-  persist();
-  render();
-});
-
-$('resetDemo').addEventListener('click', () => {
-  if (!window.confirm('Удалить только локальные данные этого демо и восстановить примеры?')) return;
-  const listings = cloneSeeds();
-  state = { listings, selectedId: listings[0].id };
-  persist('Демо сброшено');
-  render();
-});
-
-window.addEventListener('pagehide', () => {
-  readForm();
-  persist();
-});
-
-render();
+function showStep(){document.querySelectorAll('.form-step').forEach((n,i)=>n.hidden=i!==state.step);document.querySelectorAll('[data-step-label]').forEach((n,i)=>{n.classList.toggle('is-complete',i<state.step);i===state.step?n.setAttribute('aria-current','step'):n.removeAttribute('aria-current')});$('stepProgress').textContent=`Шаг ${state.step+1} из 5 · ${STEPS[state.step]}`;$('prevStep').hidden=state.step===0;$('nextStep').hidden=state.step===4;$('saveListing').hidden=state.step!==4;$('togglePublish').hidden=state.step!==4;if(state.step===3)renderPhotos();if(state.step===4)renderPreview()}
+function validateStep(index,{focus=true}={}){const fields=[...document.querySelector(`.form-step[data-step="${index}"]`).querySelectorAll('input:not([type=file]),select,textarea')];fields.forEach(f=>f.setCustomValidity(''));if(index===0){if(!$('name').value.trim())$('name').setCustomValidity('Укажите название.');if(!$('locality').value.trim())$('locality').setCustomValidity('Укажите населённый пункт.')}if(index===1&&category()==='apartment'&&Number($('floor').value)>Number($('buildingFloors').value))$('floor').setCustomValidity('Этаж квартиры не может быть выше этажности дома.');const invalid=fields.find(f=>!f.checkValidity());$('validationMessage').textContent=invalid?(invalid.validationMessage||'Проверьте поле.'):'';if(invalid&&focus){invalid.focus();invalid.reportValidity()}return!invalid}
+function validateAll(){for(let i=0;i<3;i++)if(!validateStep(i,{focus:false})){state.step=i;showStep();validateStep(i);return false}return true}
+function render(){renderList();renderForm();showStep();renderPreview()}function selectListing(id){readForm();persist();state.selectedId=id;state.step=0;persist();render();renderPhotos()}
+form.addEventListener('input',scheduleSave);form.addEventListener('change',scheduleSave);form.querySelectorAll('[name="category"]').forEach(input=>input.addEventListener('change',()=>{applyCategory(current().amenities.filter(v=>AMENITIES[category()].includes(v)));scheduleSave()}));
+$('prevStep').onclick=()=>{readForm();state.step=Math.max(0,state.step-1);persist();showStep()};$('nextStep').onclick=()=>{if(!validateStep(state.step))return;readForm();state.step=Math.min(4,state.step+1);persist();showStep()};
+form.onsubmit=event=>{event.preventDefault();if(!validateAll())return;readForm();persist();render()};$('togglePublish').onclick=()=>{if(!validateAll())return;readForm();current().published=!current().published;persist();render()};
+$('addListing').onclick=()=>{readForm();const item=normalize({id:crypto.randomUUID(),name:'Новый объект',locality:'Краснолесье',category:'guest_house'});state.listings.push(item);state.selectedId=item.id;state.step=0;persist('Новый черновик сохранён');render();$('name').select()};
+$('photos').onchange=async event=>{const input=event.currentTarget,x=current(),files=[...input.files],valid=files.filter(f=>['image/jpeg','image/png','image/webp'].includes(f.type)&&f.size>0&&f.size<=MAX_PHOTO_BYTES).slice(0,Math.max(0,MAX_PHOTOS-x.photoIds.length));input.disabled=true;$('photoStatus').textContent='Сохраняем фотографии…';let saved=0;for(const file of valid){const id=crypto.randomUUID();try{await putPhoto({id,listingId:x.id,blob:file,name:file.name,type:file.type,size:file.size,createdAt:Date.now()});x.photoIds.push(id);saved++}catch{/* continue */}}input.disabled=false;input.value='';persist();await renderPhotos();const rejected=files.length-saved;if(rejected)$('photoStatus').textContent+=` Не добавлено: ${rejected} (формат, размер, ошибка хранилища или лимит ${MAX_PHOTOS}).`};
+$('resetDemo').onclick=async()=>{if(!confirm('Удалить локальные данные только этого демо и восстановить примеры?'))return;for(const item of state.listings)try{await deleteListingPhotos(item.id)}catch{/* text reset still succeeds */}const listings=cloneSeeds();state={listings,selectedId:listings[0].id,step:0};persist('Демо сброшено');render();renderPhotos()};
+window.addEventListener('pagehide',()=>{readForm();persist();revokeUrls(photoGridUrls);revokeUrls(previewUrls)});render();renderPhotos();

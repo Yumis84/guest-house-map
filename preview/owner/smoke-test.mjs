@@ -1,29 +1,12 @@
 import assert from 'node:assert/strict';
-import { access, readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const root = dirname(fileURLToPath(import.meta.url));
-const files = ['index.html', 'styles.css', 'app.js'];
-const source = Object.fromEntries(await Promise.all(files.map(async (name) => [name, await readFile(join(root, name), 'utf8')])));
-
-assert.match(source['index.html'], /value="guest_house"/);
-assert.match(source['index.html'], /value="apartment"/);
-assert.match(source['index.html'], /value="owner"/);
-assert.match(source['index.html'], /value="intermediary"/);
-assert.match(source['app.js'], /localStorage\.setItem/);
-assert.doesNotMatch(Object.values(source).join('\n'), /supabase|https?:\/\/|fetch\s*\(|XMLHttpRequest|WebSocket/i);
-
-const assetReferences = [...source['index.html'].matchAll(/(?:href|src)="([^"]+)"/g)].map((match) => match[1]);
-assert.deepEqual(assetReferences.sort(), ['./app.js', './styles.css']);
-for (const reference of assetReferences) {
-  assert.ok(reference.startsWith('./'), `Asset must be relative: ${reference}`);
-  await access(join(root, reference.slice(2)));
-}
-
-for (const marker of ['addEventListener', "form.addEventListener('submit'", "$('togglePublish').addEventListener", "$('addListing').addEventListener"]) {
-  assert.ok(source['app.js'].includes(marker), `Missing behavior marker: ${marker}`);
-}
-
-assert.doesNotThrow(() => new Function(source['app.js']), 'app.js must contain valid JavaScript');
-console.log('Owner preview smoke test passed: syntax, local-only persistence, options, and relative assets verified.');
+import {access,readFile} from 'node:fs/promises';
+import {dirname,join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=dirname(fileURLToPath(import.meta.url)),names=['index.html','styles.css','app.js'];
+const source=Object.fromEntries(await Promise.all(names.map(async name=>[name,await readFile(join(root,name),'utf8')]))),html=source['index.html'],js=source['app.js'],all=Object.values(source).join('\n');
+for(const id of ['listingForm','name','locality','rooms','bedrooms','beds','capacity','area','floor','buildingFloors','amenityOptions','checkIn','checkOut','children','pets','smoking','events','deposit','minNights','price','photos','photoGrid','guestPreview','prevStep','nextStep'])assert.match(html,new RegExp(`id="${id}"`),`missing #${id}`);
+assert.equal((html.match(/class="form-step"/g)||[]).length,5);assert.match(html,/value="guest_house"/);assert.match(html,/value="apartment"/);assert.match(html,/multiple/);assert.match(html,/accept="image\/jpeg,image\/png,image\/webp"/);
+assert.match(js,/guest-house-owner-preview-v1/);assert.match(js,/capacity:num\(raw\?\.capacity\?\?raw\?\.guests/);assert.match(js,/\.\.\.raw/);assert.match(js,/localStorage\.setItem/);assert.match(js,/indexedDB\.open/);assert.match(js,/createObjectStore\('photos'/);assert.match(js,/blob:file/);assert.match(js,/URL\.createObjectURL/);assert.match(js,/URL\.revokeObjectURL/);assert.match(js,/MAX_PHOTOS=10/);assert.match(js,/MAX_PHOTO_BYTES=10_000_000/);assert.match(js,/Сделать фото обложкой/);assert.match(js,/movePhoto/);assert.match(js,/deletePhoto/);assert.match(js,/Этаж квартиры не может быть выше этажности дома/);assert.match(js,/const AMENITIES=\{guest_house:/);
+assert.doesNotMatch(all,/supabase|https?:\/\/|fetch\s*\(|XMLHttpRequest|WebSocket/i);
+const assets=[...html.matchAll(/(?:href|src)="([^"]+)"/g)].map(match=>match[1]);assert.deepEqual(assets.sort(),['./app.js','./styles.css']);for(const asset of assets)await access(join(root,asset.slice(2)));
+assert.doesNotThrow(()=>new Function(js));console.log('Owner preview smoke test passed: wizard fields, legacy migration, local-only IndexedDB photos, limits, controls, and syntax verified.');
