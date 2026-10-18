@@ -40,6 +40,7 @@ for name in (
     "004_confirm_reservation_smoke.sql",
     "006_cancel_reservation_smoke.sql",
     "008_idempotent_confirmation_smoke.sql",
+    "009_invalid_mapping_smoke.sql",
 ):
     result = psql(file="sql/sandbox/" + name)
     if result.returncode:
