@@ -47,7 +47,7 @@ function open(p){
   selected=p;dirty=false;epoch++;
   $('#editor').hidden=false;$('#editorTitle').textContent=p.name;$('#editorStatus').textContent='';
   for(const key of ['name','description','contact_phone','contact_email','website_url'])$('#'+key).value=p[key]||'';
-  $('#published').checked=p.published;$('#photo').value='';
+  $('#photo').value='';
   const editable=canEdit(members.find(m=>m.company_id===p.company_id)?.member_role);
   $('#uploadControls').hidden=!editable;editorBusy(false);
   if(!editable)$('#editorStatus').textContent='Доступ только для просмотра.';
