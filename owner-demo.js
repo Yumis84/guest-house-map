@@ -1,7 +1,7 @@
 const byId=id=>document.getElementById(id);
 const houses=[
-{name:'Демонстрационный дом № 1',description:'Пример описания. Это не настоящий гостевой дом.',phone:'',email:'',published:false,confirmed:false,type:'Гостевой дом',guests:4,amenities:[]},
-{name:'Демонстрационный дом № 2',description:'Второй вымышленный объект.',phone:'',email:'',published:true,confirmed:false,type:'Коттедж',guests:6,amenities:['Wi-Fi']}
+{name:'Демонстрационный дом № 1',description:'Пример описания. Это не настоящий гостевой дом.',phone:'',email:'',published:false,confirmed:false,type:'Гостевой дом',guests:4,bedrooms:2,beds:4,locality:'Краснолесье',amenities:[]},
+{name:'Демонстрационный дом № 2',description:'Второй вымышленный объект.',phone:'',email:'',published:true,confirmed:false,type:'Коттедж',guests:6,bedrooms:3,beds:6,locality:'Чистые Пруды',amenities:['Wi-Fi']}
 ];
 let current=0,changed=false;
 function draw(){
@@ -22,6 +22,7 @@ function draw(){
  const h=houses[current];
  byId('demoTitle').textContent=h.name;
  byId('demoType').value=h.type;byId('demoGuests').value=h.guests;
+ byId('demoLocality').value=h.locality;byId('demoBedrooms').value=h.bedrooms;byId('demoBeds').value=h.beds;
  for(const [id,label] of [['demoWifi','Wi-Fi'],['demoParking','Парковка'],['demoKitchen','Кухня'],['demoPets','Можно с животными']])byId(id).checked=h.amenities.includes(label);
  for(const [id,key] of [['demoName','name'],['demoDescription','description'],['demoPhone','phone'],['demoEmail','email']])byId(id).value=h[key];
  byId('demoStatus').textContent=(h.published?'Опубликован':'Черновик')+(h.confirmed?' · контакты подтверждены':' · контакты скрыты');
@@ -31,17 +32,23 @@ function draw(){
  const title=document.createElement('h3');title.textContent=h.published?h.name:'Объект не опубликован';guest.append(title);
  if(h.published){
   const description=document.createElement('p');description.textContent=h.description;guest.append(description);
-  const summary=document.createElement('p');summary.textContent=h.type+' · До '+h.guests+' гостей'+(h.amenities.length?' · '+h.amenities.join(', '):'');guest.append(summary);
+  const summary=document.createElement('p');summary.textContent=h.type+' · '+h.locality+' · До '+h.guests+' гостей · '+h.bedrooms+' спален · '+h.beds+' спальных мест'+(h.amenities.length?' · '+h.amenities.join(', '):'');guest.append(summary);
   if(h.confirmed)for(const value of [h.phone,h.email])if(value){
    const line=document.createElement('p');line.textContent=value;guest.append(line);
   }
  }
 }
+byId('demoAdd').addEventListener('click',()=>{
+ if(changed&&!confirm('Отменить несохранённые изменения?'))return;
+ houses.push({name:'Новый гостевой дом',description:'',phone:'',email:'',published:false,confirmed:false,type:'Гостевой дом',guests:2,bedrooms:1,beds:2,locality:'Краснолесье',amenities:[]});
+ current=houses.length-1;changed=false;draw();byId('demoName').focus();
+});
 byId('demoForm').addEventListener('input',()=>changed=true);
 byId('demoForm').addEventListener('submit',event=>{
  event.preventDefault();const h=houses[current];
  h.name=byId('demoName').value.trim();h.description=byId('demoDescription').value.trim();
  h.type=byId('demoType').value;h.guests=Number(byId('demoGuests').value);
+ h.locality=byId('demoLocality').value.trim();h.bedrooms=Number(byId('demoBedrooms').value);h.beds=Number(byId('demoBeds').value);
  h.amenities=[['demoWifi','Wi-Fi'],['demoParking','Парковка'],['demoKitchen','Кухня'],['demoPets','Можно с животными']].filter(([id])=>byId(id).checked).map(([,label])=>label);
  const phone=byId('demoPhone').value.trim(),email=byId('demoEmail').value.trim();
  if(h.phone!==phone||h.email!==email)h.confirmed=false;
