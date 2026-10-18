@@ -17,12 +17,12 @@
 <div class="demo-layout">
 <section class="panel"><h2>Мои объекты</h2><p class="muted">Выберите дом для редактирования.</p><div id="demoProperties"></div></section>
 <section class="panel"><h2 id="demoTitle">Объект</h2><p id="demoStatus" class="demo-status" role="status" aria-live="polite"></p><p id="demoHint" class="muted" aria-live="polite"></p>
-<form id="demoForm" autocomplete="off">
+<form id="demoForm" autocomplete="off"><p class="muted"><strong>Шаг 1 из 3.</strong> Основные сведения</p>
 <label for="demoName">Название</label><input id="demoName" required maxlength="160">
-<label for="demoDescription">Описание</label><textarea id="demoDescription" maxlength="10000"></textarea>
-<label for="demoPhone">Телефон для гостей</label><input id="demoPhone" type="tel">
+<label for="demoType">Тип жилья</label><select id="demoType"><option>Гостевой дом</option><option>Коттедж</option><option>Дом целиком</option><option>Комната</option></select><label for="demoGuests">Сколько гостей можно разместить</label><input id="demoGuests" type="number" min="1" max="50" value="4"><label for="demoDescription">Описание</label><textarea id="demoDescription" maxlength="10000"></textarea>
+<p class="muted"><strong>Шаг 2 из 3.</strong> Контакты и удобства</p><fieldset><legend>Что есть в доме</legend><label><input type="checkbox" id="demoWifi"> Wi-Fi</label><label><input type="checkbox" id="demoParking"> Парковка</label><label><input type="checkbox" id="demoKitchen"> Кухня</label><label><input type="checkbox" id="demoPets"> Можно с животными</label></fieldset><label for="demoPhone">Телефон для гостей</label><input id="demoPhone" type="tel">
 <label for="demoEmail">Email для гостей</label><input id="demoEmail" type="email">
-<div class="demo-actions"><button type="submit">Сохранить изменения</button><button type="button" id="demoPublish" class="secondary">Опубликовать</button><button type="button" id="demoConfirm" class="secondary">Подтвердить публичность контактов</button></div>
+<p class="muted"><strong>Шаг 3 из 3.</strong> Предпросмотр и публикация</p><div class="demo-actions"><button type="submit">Сохранить изменения</button><button type="button" id="demoPublish" class="secondary">Опубликовать</button><button type="button" id="demoConfirm" class="secondary">Подтвердить публичность контактов</button></div>
 </form>
 <p class="muted">После публикации название и описание видны посетителям. Телефон и email появляются в открытом каталоге только после отдельного подтверждения.</p>
 <h3>Как видит гость</h3><div id="demoGuest" class="demo-guest"></div>
