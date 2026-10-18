@@ -35,9 +35,11 @@ for name in (
     "001_resource_allocation_prototype.sql",
     "003_confirm_reservation_prototype.sql",
     "005_cancel_reservation_prototype.sql",
+    "007_idempotent_confirmation_prototype.sql",
     "002_resource_allocation_smoke.sql",
     "004_confirm_reservation_smoke.sql",
     "006_cancel_reservation_smoke.sql",
+    "008_idempotent_confirmation_smoke.sql",
 ):
     result = psql(file="sql/sandbox/" + name)
     if result.returncode:
