@@ -90,7 +90,7 @@ async function photos(p,token){
 $('#propertyForm').onsubmit=async event=>{
   event.preventDefault();if(busy||!selected||$('#fields').disabled)return;
   const p=selected,token=epoch;
-  let patch;try{patch=propertyPatch(Object.fromEntries([...new FormData($('#propertyForm')),['published',$('#published').checked]]));}catch(error){$('#editorStatus').textContent=error.message;return;}
+  let patch;try{patch=propertyPatch(Object.fromEntries(new FormData($('#propertyForm'))));}catch(error){$('#editorStatus').textContent=error.message;return;}
   editorBusy(true);$('#editorStatus').textContent='Сохраняем…';
   try{
     await ensureUser();
