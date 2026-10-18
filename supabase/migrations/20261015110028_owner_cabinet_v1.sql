@@ -25,14 +25,16 @@ alter table public.properties
 -- Column grants are deliberate: company_id, id, source_key, revision and inventory cannot be changed.
 revoke all on public.properties from anon, authenticated, public;
 revoke all on public.company_members from anon, authenticated, public;
-grant select on public.properties to anon, authenticated;
+-- Anonymous table access withheld pending reviewed public catalog view.
+grant select on public.properties to authenticated;
 grant select on public.company_members to authenticated;
 drop policy members_can_read_own_membership on public.company_members;
 create policy members_can_read_own_membership on public.company_members for select to authenticated
 using(user_id=(select auth.uid()));
 drop policy published_properties_read on public.properties;
 create policy published_properties_read on public.properties for select to anon,authenticated using(published);
-grant update (name,description,contact_phone,contact_email,website_url,published) on public.properties to authenticated;
+-- Publication is reserved for a separately reviewed moderation workflow.
+grant update (name,description,contact_phone,contact_email,website_url) on public.properties to authenticated;
 create policy owner_read_properties on public.properties for select to authenticated
 using (exists(select 1 from public.company_members cm where cm.company_id=properties.company_id and cm.user_id=(select auth.uid())));
 create policy owner_update_properties on public.properties for update to authenticated
