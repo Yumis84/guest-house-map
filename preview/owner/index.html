@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Демо кабинета владельца</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <span class="eyebrow">Краснолесье · локальное демо</span>
+      <h1>Кабинет размещающего</h1>
+    </div>
+    <button id="resetDemo" class="button button-quiet" type="button">Сбросить демо</button>
+  </header>
+
+  <main>
+    <p class="notice" role="note">
+      <strong>Изолированный предпросмотр.</strong> Данные остаются только в localStorage этого браузера.
+      Демо не подключается к внешней базе, не создаёт бронирований и не изменяет каталог.
+    </p>
+
+    <div class="layout">
+      <aside class="panel sidebar" aria-label="Объекты">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Портфолио</span>
+            <h2>Мои объекты</h2>
+          </div>
+          <button id="addListing" class="button button-small" type="button">+ Добавить</button>
+        </div>
+        <div id="listingList" class="listing-list"></div>
+      </aside>
+
+      <section class="panel workspace">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Редактор объявления</span>
+            <h2 id="editorTitle">Новый объект</h2>
+          </div>
+          <span id="saveState" class="save-state" role="status">Сохранено локально</span>
+        </div>
+
+        <form id="listingForm">
+          <div class="grid two-columns">
+            <label>
+              Название
+              <input id="name" name="name" maxlength="100" required>
+            </label>
+            <label>
+              Населённый пункт
+              <input id="locality" name="locality" maxlength="100" required>
+            </label>
+            <label>
+              Категория
+              <select id="category" name="category" required>
+                <option value="guest_house">Гостевой дом</option>
+                <option value="apartment">Апартаменты</option>
+              </select>
+            </label>
+            <label>
+              Роль размещающего
+              <select id="role" name="role" required>
+                <option value="owner">Владелец</option>
+                <option value="intermediary">Посредник</option>
+              </select>
+            </label>
+            <label>
+              Цена за ночь, ₽
+              <input id="price" name="price" type="number" min="1" max="1000000" required>
+            </label>
+            <label>
+              Гостей
+              <input id="guests" name="guests" type="number" min="1" max="50" required>
+            </label>
+          </div>
+
+          <label>
+            Описание
+            <textarea id="description" name="description" rows="5" maxlength="2000"></textarea>
+          </label>
+
+          <div class="grid two-columns">
+            <label>
+              Телефон для гостей
+              <input id="phone" name="phone" type="tel" maxlength="40" placeholder="+7 900 000-00-00">
+            </label>
+            <label>
+              Email для гостей
+              <input id="email" name="email" type="email" maxlength="120" placeholder="owner@example.test">
+            </label>
+          </div>
+
+          <label class="checkbox-row">
+            <input id="available" name="available" type="checkbox">
+            Открыто для заявок в рамках демо
+          </label>
+
+          <div class="actions">
+            <button class="button" type="submit">Сохранить</button>
+            <button id="togglePublish" class="button button-secondary" type="button">Опубликовать в демо</button>
+          </div>
+        </form>
+
+        <section class="guest-preview" aria-labelledby="guestPreviewTitle">
+          <span class="eyebrow">Как увидит гость</span>
+          <div id="guestPreview"></div>
+        </section>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
