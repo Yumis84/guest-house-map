@@ -101,6 +101,23 @@ test('public catalog hides contacts until owner confirmation',async()=>{
   assert.equal(p.contact_phone,'+7 900 111-22-33');
  });
 });
+test('manager editing a phone never implicitly confirms public contact',async()=>{
+ await db.query("update properties set contact_phone='+7 900 111-22-33',contact_confirmed_at=null where id=$1",[pid(3)]);
+ await as(5,async()=>{
+  await db.query("update properties set contact_phone='+7 900 222-33-44' where id=$1",[pid(1)]);
+  const [p]=await rows('select contact_confirmed_at from properties where id=$1',[pid(1)]);
+  assert.equal(p.contact_confirmed_at,null);
+ });
+});
+test('editing confirmed contact revokes prior consent until reconfirmed',async()=>{
+ await db.query("update properties set contact_phone='+7 900 555-55-55' where id=$1",[pid(3)]);
+ await as(2,()=>db.query('select public.confirm_property_contacts($1)',[pid(3)]));
+ await db.query("update properties set contact_phone='+7 900 666-66-66' where id=$1",[pid(3)]);
+ await as(0,async()=>{
+  const [p]=await rows('select contact_phone from public.public_catalog_properties where id=$1',[pid(3)]);
+  assert.equal(p.contact_phone,null);
+ });
+});
 test('candidate rollback disables owner writes and locks private photos without deleting data',async()=>{
  await db.exec(await readFile('supabase/rollback/owner_self_publish.sql','utf8'));
  await as(1,async()=>{
