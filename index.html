@@ -50,11 +50,11 @@
 <div id="map"></div>
 <header class="top" id="mapTop"><div class="search"><input id="q" placeholder="Название, Краснолесье, баня, бассейн…"></div><div class="chips" id="chips"></div></header>
 <div class="cards" id="cards"></div>
-<section class="screen" id="catalog"><div class="catalog-owner-link"><a href="https://krasnolesye-owner-cabinet-preview-1phlkethq.vercel.app/" target="_blank" rel="noopener noreferrer" aria-label="Открыть тестовый личный кабинет владельца">👤 Личный кабинет <small>Тест ↗</small></a></div><div class="head"><h1>Каталог жилья</h1><span class="badge" id="count"></span></div>
+<section class="screen" id="catalog"><div class="catalog-owner-link"><a href="https://krasnolesye-owner-cabinet-preview-1phlkethq.vercel.app/" target="_blank" rel="noopener noreferrer" aria-label="Открыть тестовый личный кабинет владельца">👤 Личный кабинет <small>Тест ↗</small></a></div><div class="head"><h1>Каталог жилья</h1><span class="badge" id="count" aria-live="polite" aria-atomic="true"></span></div>
 <div class="catalog-filter-panel" aria-label="Фильтры каталога">
 <label for="localitySearch">Город или посёлок</label>
-<div class="catalog-combobox"><input id="localitySearch" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="localityOptions" placeholder="Начните вводить название"><div id="localityOptions" role="listbox" hidden></div></div>
-<label for="propertyTypeFilter">Тип жилья</label><select id="propertyTypeFilter"><option value="">Все типы</option><option value="guest_house">Гостевые дома</option><option value="apartment">Квартиры</option><option value="cottage">Коттеджи и домики</option><option value="room">Номера и комнаты</option></select>
+<div class="catalog-combobox"><input id="localitySearch" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="localityOptions" aria-describedby="localityHelp" placeholder="Начните вводить название"><div id="localityOptions" role="listbox" hidden></div></div><small id="localityHelp" style="color:#b7c9bc">Введите название и выберите населённый пункт из списка</small>
+<label for="propertyTypeFilter">Тип жилья</label><select id="propertyTypeFilter"><option value="">Все типы</option><option value="guest_house">Гостевые дома</option><option value="apartment">Квартиры</option><option value="cottage">Коттеджи и домики</option></select>
 <button id="resetCatalogFilters" type="button">Сбросить фильтры</button>
 </div><div class="list" id="list"></div></section>
 <section class="screen" id="favorites"><div class="head"><h1>Избранное</h1><span class="badge" id="favCount"></span></div><div class="list" id="favList"></div></section>
@@ -73,7 +73,7 @@ const houses=(window.GUEST_HOUSES||[]).filter(x=>x.active!==false&&!x.parentId),
 const favs=new Set(JSON.parse(localStorage.getItem('rominta_favs')||'[]')),bookings=JSON.parse(localStorage.getItem('rominta_bookings')||'[]');let chosen=null,active='Все',map,markers={};let selectedLocality='',selectedPropertyType='';
 const filters=['Все','До 7000 ₽','Баня','Бассейн','Можно с собаками'];
 const money=n=>n?Number(n).toLocaleString('ru-RU'):'',price=h=>h.price?`от ${money(h.price)} ₽/ночь`:'Цена по запросу';
-function filtered(){const q=$('#q').value.trim().toLowerCase();return houses.filter(h=>(!selectedLocality||h.locality===selectedLocality)&&(!selectedPropertyType||h.propertyType===selectedPropertyType)&&(!q||[h.name,h.address,h.description,...h.amenities].join(' ').toLowerCase().includes(q))&&(active==='Все'||active==='До 7000 ₽'&&h.price&&h.price<=7000||active==='Баня'&&h.amenities.some(x=>x.toLowerCase().includes('бан'))||active==='Бассейн'&&h.amenities.some(x=>x.toLowerCase().includes('басс'))||active==='Можно с собаками'&&h.amenities.some(x=>x.toLowerCase().includes('собак')||x.toLowerCase().includes('живот'))));}
+function filtered(){const q=$('#q').value.trim().toLowerCase(),localityQuery=!selectedLocality?normLocality($('#localitySearch').value):'';return houses.filter(h=>(!selectedLocality||h.localityId===selectedLocality)&&(!localityQuery||normLocality(h.locality).includes(localityQuery))&&(!selectedPropertyType||h.propertyType===selectedPropertyType)&&(!q||[h.name,h.address,h.description,...h.amenities].join(' ').toLowerCase().includes(q))&&(active==='Все'||active==='До 7000 ₽'&&h.price&&h.price<=7000||active==='Баня'&&h.amenities.some(x=>x.toLowerCase().includes('бан'))||active==='Бассейн'&&h.amenities.some(x=>x.toLowerCase().includes('басс'))||active==='Можно с собаками'&&h.amenities.some(x=>x.toLowerCase().includes('собак')||x.toLowerCase().includes('живот'))));}
 function card(h){return `<div class="card" data-id="${h.id}"><div class="thumb">⌂</div><div class="cb"><div class="ct"><b>${h.name}</b></div><div class="muted">${h.address}</div><div class="price">${price(h)}</div><div class="muted">${h.capacity?'до '+h.capacity+' гостей':'вместимость уточняется'}</div></div></div>`}
 function item(h){return `<article class="item" data-id="${h.id}"><div class="thumb">⌂</div><div class="ib"><b>${h.name}</b><div class="muted">${h.address}</div><div class="price">${price(h)}</div><div class="tags">${h.amenities.slice(0,4).map(x=>`<span class="tag">${x}</span>`).join('')}</div></div></article>`}
 function render(){const a=filtered();$('#chips').innerHTML=filters.map(x=>`<button class="chip ${x===active?'on':''}" data-f="${x}">${x}</button>`).join('');$('#cards').innerHTML=a.map(card).join('');$('#list').innerHTML=a.length?a.map(item).join(''):'<div class="chat-placeholder">По выбранным фильтрам жильё не найдено. Попробуйте другой населённый пункт или тип.</div>';$('#count').textContent=a.length;$$('[data-f]').forEach(b=>b.onclick=()=>{active=b.dataset.f;render();syncMarkers()});$$('[data-id]').forEach(e=>e.onclick=()=>openHouse(e.dataset.id));renderFavorites();syncMarkers()}
@@ -134,25 +134,27 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clea
 if(window.L){map=L.map('map',{zoomControl:false}).setView([54.96,22.42],11);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map)}
 const geo=JSON.parse(localStorage.getItem('rominta_geo')||'{}');function markerIcon(){return L.divIcon({className:'',html:'<div style="width:40px;height:40px;border-radius:14px;background:#111815;border:2px solid #f2a93b;display:grid;place-items:center;color:#f2a93b;font-size:21px">⌂</div>',iconSize:[40,40],iconAnchor:[20,20]})}function addMarker(h){if(!window.L||!h.lat||markers[h.id])return;const m=L.marker([h.lat,h.lng],{icon:markerIcon()}).addTo(map);m.on('click',()=>openHouse(h.id));markers[h.id]=m}houses.forEach(h=>{if(geo[h.address]){h.lat=geo[h.address][0];h.lng=geo[h.address][1];addMarker(h)}});async function geocode(){for(const h of houses){if(h.lat)continue;try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ru&q=${encodeURIComponent(h.address)}`),a=await r.json();if(a[0]){h.lat=+a[0].lat;h.lng=+a[0].lon;geo[h.address]=[h.lat,h.lng];localStorage.setItem('rominta_geo',JSON.stringify(geo));addMarker(h)}}catch(_){}await new Promise(r=>setTimeout(r,1100))}}function syncMarkers(){if(!map)return;const ids=new Set(filtered().map(h=>h.id));Object.entries(markers).forEach(([id,m])=>ids.has(id)?m.addTo(map):map.removeLayer(m))}setTimeout(geocode,500);
 
-// Searchable locality filter: suggestions only for published, top-level properties.
+// Searchable locality filter. A locality appears only when its public parent property is listed.
 const localitySearch=$('#localitySearch'),localityOptions=$('#localityOptions');
-const localityNames=[...new Set(houses.map(h=>h.locality).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
-const normLocality=v=>v.trim().toLocaleLowerCase('ru').replace(/ё/g,'е');
-function closeLocality(){localityOptions.hidden=true;localitySearch.setAttribute('aria-expanded','false')}
-function chooseLocality(name){selectedLocality=name;localitySearch.value=name;closeLocality();render()}
-function showLocalities(){const q=normLocality(localitySearch.value);const matches=localityNames.filter(x=>normLocality(x).includes(q));localityOptions.replaceChildren();
-const all=document.createElement('button');all.type='button';all.role='option';all.textContent='Все населённые пункты';all.onclick=()=>chooseLocality('');localityOptions.append(all);
-matches.forEach(name=>{const b=document.createElement('button');b.type='button';b.role='option';b.textContent=name;b.onclick=()=>chooseLocality(name);localityOptions.append(b)});
+const normLocality=v=>String(v||'').trim().toLocaleLowerCase('ru').replace(/ё/g,'е');
+const catalogLocalities=()=>[...new Map(houses.filter(h=>h.localityId&&h.locality).map(h=>[h.localityId,{id:h.localityId,name:h.locality,district:h.localityDistrict||''}])).values()].sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+let localityTimer=0;
+function closeLocality(){localityOptions.hidden=true;localitySearch.setAttribute('aria-expanded','false');localitySearch.removeAttribute('aria-activedescendant')}
+function chooseLocality(loc){selectedLocality=loc?.id||'';localitySearch.value=loc?.name||'';closeLocality();render();localitySearch.focus()}
+function showLocalities(){const q=normLocality(localitySearch.value),list=catalogLocalities(),matches=list.filter(x=>normLocality(x.name).includes(q)||normLocality(x.district).includes(q));
+localityOptions.replaceChildren();
+const make=(label,loc)=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','option');b.setAttribute('aria-selected',String(selectedLocality===(loc?.id||'')));b.id='loc-option-'+localityOptions.children.length;b.textContent=label;b.onclick=()=>chooseLocality(loc);localityOptions.append(b)};
+make('Все населённые пункты',null);
+matches.forEach(loc=>make(loc.name+(list.filter(x=>x.name===loc.name).length>1?' · '+loc.district:''),loc));
 if(q&&!matches.length){const note=document.createElement('div');note.style.padding='12px';note.textContent='Населённый пункт не найден';localityOptions.append(note)}
 localityOptions.hidden=false;localitySearch.setAttribute('aria-expanded','true')}
 localitySearch.addEventListener('focus',showLocalities);
-localitySearch.addEventListener('input',()=>{selectedLocality='';showLocalities();render()});
-localitySearch.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLocality()}else if(e.key==='ArrowDown'){e.preventDefault();if(localityOptions.hidden)showLocalities();localityOptions.querySelector('button')?.focus()}else if(e.key==='Enter'){e.preventDefault();const exact=localityNames.find(x=>normLocality(x)===normLocality(localitySearch.value));if(exact)chooseLocality(exact);else showLocalities()}});
-localityOptions.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLocality();localitySearch.focus()}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const a=[...localityOptions.querySelectorAll('button')],i=a.indexOf(document.activeElement);a[(i+(e.key==='ArrowDown'?1:-1)+a.length)%a.length]?.focus()}});
+localitySearch.addEventListener('input',()=>{selectedLocality='';render();clearTimeout(localityTimer);localityTimer=setTimeout(showLocalities,120)});
+localitySearch.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLocality()}else if(e.key==='ArrowDown'){e.preventDefault();clearTimeout(localityTimer);showLocalities();localityOptions.querySelector('button')?.focus()}else if(e.key==='Enter'){e.preventDefault();const exact=catalogLocalities().find(x=>normLocality(x.name)===normLocality(localitySearch.value));if(exact)chooseLocality(exact);else showLocalities()}});
+localityOptions.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLocality();localitySearch.focus()}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const a=[...localityOptions.querySelectorAll('button')],i=a.indexOf(document.activeElement);a[(i+(e.key==='ArrowDown'?1:-1)+a.length)%a.length]?.focus()}else if(e.key==='Enter'&&document.activeElement?.tagName==='BUTTON'){document.activeElement.click()}});
 document.addEventListener('click',e=>{if(!e.target.closest('.catalog-combobox')){closeLocality();if(!selectedLocality)localitySearch.value=''}});
 $('#propertyTypeFilter').addEventListener('change',e=>{selectedPropertyType=e.target.value;render()});
 $('#resetCatalogFilters').addEventListener('click',()=>{selectedLocality='';selectedPropertyType='';localitySearch.value='';$('#propertyTypeFilter').value='';closeLocality();render()});
-
 $('#startChat').onclick=()=>toast('Нужен webhook URL готового n8n workflow гостевых домов');render();renderBookings();
 </script>
 <script src="guest-photos-v4.js?v=20261013-photo5"></script>
