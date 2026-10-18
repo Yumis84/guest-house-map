@@ -35,7 +35,7 @@ export function propertyPatch(input){
     let u;try{u=new URL(website_url);}catch{throw Error('Укажите полный адрес сайта https://…');}
     if(!['https:','http:'].includes(u.protocol)||u.username||u.password||website_url.length>2048) throw Error('Укажите безопасный адрес сайта http:// или https://.');
   }
-  return {name,description:description||null,contact_phone:contact_phone||null,contact_email:contact_email||null,website_url:website_url||null,published:input.published===true};
+  return {name,description:description||null,contact_phone:contact_phone||null,contact_email:contact_email||null,website_url:website_url||null};
 }
 export function photoPath(property,fileName){
   if(!/^[0-9a-f-]{36}$/i.test(property.id)||!/^[0-9a-f-]{36}$/i.test(property.company_id)||! /^[0-9a-f-]{36}\.webp$/i.test(fileName)) throw Error('Некорректный путь фотографии.');
