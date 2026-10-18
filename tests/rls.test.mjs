@@ -12,6 +12,7 @@ before(async()=>{
  await db.exec(await readFile('tests/fixtures/baseline.sql','utf8'));
  const name=(await readdir('supabase/migrations')).find(n=>n.endsWith('_owner_cabinet_v1.sql'));
  await db.exec(await readFile('supabase/migrations/'+name,'utf8'));
+ await db.exec(await readFile('supabase/migrations/20261018100000_owner_self_publish_DRAFT.sql','utf8'));
  await db.query("insert into storage.objects(bucket_id,name) values ('owner-property-photos',$1),('owner-property-photos',$2)",[path(1,1),path(2,2)]);
 });
 after(async()=>{await db?.close();});
@@ -78,6 +79,28 @@ test('restrictive storage guard survives an unrelated broad policy',async()=>{
  finally{await db.exec('drop policy unrelated_broad on storage.objects');}
 });
 
+test('publication RPC enforces ownership and anonymous denial',async()=>{
+ await as(1,async()=>{
+  await db.query('select public.set_property_published($1,true)',[pid(1)]);
+  assert.equal((await rows('select published from properties where id=$1',[pid(1)]))[0].published,true);
+  await assert.rejects(db.query('select public.set_property_published($1,true)',[pid(2)]),e=>e.code==='42501');
+  await assert.rejects(db.query('update properties set published=false where id=$1',[pid(1)]),e=>e.code==='42501');
+ });
+ await as(3,()=>assert.rejects(db.query('select public.set_property_published($1,true)',[pid(1)]),e=>e.code==='42501'));
+ await as(0,()=>assert.rejects(db.query('select public.set_property_published($1,true)',[pid(1)]),e=>e.code==='42501'));
+});
+test('public catalog hides contacts until owner confirmation',async()=>{
+ await db.query("update properties set contact_phone='+7 900 111-22-33' where id=$1",[pid(3)]);
+ await as(0,async()=>{
+  const [p]=await rows('select contact_phone from public.public_catalog_properties where id=$1',[pid(3)]);
+  assert.equal(p.contact_phone,null);
+ });
+ await as(2,async()=>await db.query('select public.confirm_property_contacts($1)',[pid(3)]));
+ await as(0,async()=>{
+  const [p]=await rows('select contact_phone from public.public_catalog_properties where id=$1',[pid(3)]);
+  assert.equal(p.contact_phone,'+7 900 111-22-33');
+ });
+});
 test('candidate rollback disables owner writes and locks private photos without deleting data',async()=>{
  await db.exec(await readFile('supabase/rollback/owner_cabinet_v1.sql','utf8'));
  await as(1,async()=>{
