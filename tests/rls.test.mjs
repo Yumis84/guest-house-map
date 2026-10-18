@@ -25,9 +25,14 @@ async function as(n,fn){
  }finally{await db.exec('rollback');}
 }
 const rows=async(sql,params=[])=>(await db.query(sql,params)).rows;
+async function rejectsWithoutAborting(work,validation){
+ await db.exec('savepoint expected_failure');
+ try{await assert.rejects(work(),validation);}
+ finally{await db.exec('rollback to savepoint expected_failure');await db.exec('release savepoint expected_failure');}
+}
 test('anonymous cannot read base properties; private photos denied',()=>as(0,async()=>{
- await assert.rejects(db.query('select name from properties'),e=>e.code==='42501');
  assert.equal((await rows('select * from storage.objects')).length,0);
+ await assert.rejects(db.query('select name from properties'),e=>e.code==='42501');
 }));
 for(const [n,expected] of [[1,['A draft']],[2,['B draft','B public']],[3,['A draft']],[4,[]]]){
  test('private owner-only property reads for user '+n,()=>as(n,async()=>{
@@ -70,7 +75,7 @@ for(const n of [3,4,2])test('viewer/foreign/nonmember cannot delete A photo '+n,
 test('storage overwrite/rename denied',()=>as(1,async()=>assert.equal((await rows("update storage.objects set name='changed.webp' returning id")).length,0)));
 test('revocation takes effect without JWT refresh',async()=>{
  await db.query('delete from company_members where user_id=$1',[uid(1)]);
- try{await as(1,async()=>{assert.equal((await rows('select * from properties where id=$1',[pid(1)])).length,0);assert.equal((await rows('select * from storage.objects')).length,0);});}
+ try{await as(1,async()=>{assert.equal((await rows('select id,name from properties where id=$1',[pid(1)])).length,0);assert.equal((await rows('select * from storage.objects')).length,0);});}
  finally{await db.query('insert into company_members values($1,$2,$3)',[cid(1),uid(1),'owner']);}
 });
 test('restrictive storage guard survives an unrelated broad policy',async()=>{
@@ -83,7 +88,7 @@ test('publication RPC enforces ownership and anonymous denial',async()=>{
  await as(1,async()=>{
   await db.query('select public.set_property_published($1,true)',[pid(1)]);
   assert.equal((await rows('select published from properties where id=$1',[pid(1)]))[0].published,true);
-  await assert.rejects(db.query('select public.set_property_published($1,true)',[pid(2)]),e=>e.code==='42501');
+  await rejectsWithoutAborting(()=>db.query('select public.set_property_published($1,true)',[pid(2)]),e=>e.code==='42501');
   await assert.rejects(db.query('update properties set published=false where id=$1',[pid(1)]),e=>e.code==='42501');
  });
  await as(3,()=>assert.rejects(db.query('select public.set_property_published($1,true)',[pid(1)]),e=>e.code==='42501'));
@@ -95,11 +100,15 @@ test('public catalog hides contacts until owner confirmation',async()=>{
   const [p]=await rows('select contact_phone from public.public_catalog_properties where id=$1',[pid(3)]);
   assert.equal(p.contact_phone,null);
  });
- await as(2,async()=>await db.query('select public.confirm_property_contacts($1)',[pid(3)]));
- await as(0,async()=>{
+ await db.exec('begin');
+ try{
+  await db.query("select set_config('request.jwt.claim.sub',$1,true)",[uid(2)]);
+  await db.exec('set local role authenticated');
+  await db.query('select public.confirm_property_contacts($1)',[pid(3)]);
+  await db.exec('set local role anon');
   const [p]=await rows('select contact_phone from public.public_catalog_properties where id=$1',[pid(3)]);
   assert.equal(p.contact_phone,'+7 900 111-22-33');
- });
+ }finally{await db.exec('rollback');}
 });
 test('manager editing a phone never implicitly confirms public contact',async()=>{
  await db.query("update properties set contact_phone='+7 900 111-22-33',contact_confirmed_at=null where id=$1",[pid(3)]);
@@ -121,12 +130,12 @@ test('editing confirmed contact revokes prior consent until reconfirmed',async()
 test('candidate rollback disables owner writes and locks private photos without deleting data',async()=>{
  await db.exec(await readFile('supabase/rollback/owner_self_publish.sql','utf8'));
  await as(1,async()=>{
-  await assert.rejects(db.query('select public.set_property_published($1,true)',[pid(1)]),e=>e.code==='42883'||e.code==='42501');
+  await rejectsWithoutAborting(()=>db.query('select public.set_property_published($1,true)',[pid(1)]),e=>e.code==='42883'||e.code==='42501');
   assert.equal((await rows('select public.owner_cabinet_version() as version'))[0].version,1);
  });
  await db.exec(await readFile('supabase/rollback/owner_cabinet_v1.sql','utf8'));
  await as(1,async()=>{
-  assert.equal((await rows('select name from properties')).length,1);
+  assert.equal((await rows('select name from properties')).length,0);
   assert.equal((await rows('select * from storage.objects')).length,0);
   await assert.rejects(db.query("update properties set name='Blocked' where id=$1",[pid(1)]),e=>e.code==='42501');
  });

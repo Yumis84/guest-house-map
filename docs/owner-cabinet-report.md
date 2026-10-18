@@ -62,3 +62,41 @@ PR: https://github.com/Yumis84/guest-house-map/pull/7 (keep Draft).
 - BLOCKED: `npm run test:browser` could not start a Playwright worker (`spawn EPERM`) in the managed environment. No browser assertion ran; the earlier 66-test PASS remains historical evidence, not a new result.
 - EXPECTED FAIL / BLOCKED: `npm run test:jwt` refused before network access because no disposable local stack or required settings were supplied.
 - NOT COMMITTED: the requested all-tests-pass condition was not met in this continuation run.
+
+## Owner demo continuation, 2026-10-18
+
+This continuation is demo-only. It does not apply SQL, contact a hosted database, deploy production, or change the real owner dashboard. Existing uncommitted work was preserved, and `vendor/` was excluded from the implementation scope.
+
+Current local test evidence must not be reported as an all-tests PASS:
+
+- **FAIL:** `npm.cmd test` completed with 53/58 passing and five failing SQL tests in `tests/rls.test.mjs`:
+  1. `anonymous cannot read base properties; private photos denied` — transaction aborted (`25P02`) before the storage assertion.
+  2. `revocation takes effect without JWT refresh` — `permission denied for table properties` (`42501`).
+  3. `publication RPC enforces ownership and anonymous denial` — expected rejection did not match because the transaction was already aborted.
+  4. `public catalog hides contacts until owner confirmation` — confirmed phone was `null`, not the expected value.
+  5. `candidate rollback disables owner writes and locks private photos without deleting data` — rollback SQL syntax error near `$` (`42601`).
+- **BLOCKED:** `npm.cmd run test:browser` stopped at `Error: spawn EPERM`. No Playwright test or browser assertion ran in this continuation, including the focused owner-demo specifications.
+
+Passing focused Node/static owner-demo checks may be reported separately, but they do not override the five SQL failures or the Playwright blocker above.
+
+## Owner demo and property-category release review, 2026-10-18
+
+Release status: **BLOCKED; no release commit created.** Vendor changes were not reviewed as application changes and must remain excluded from any future app/docs/tests commit.
+
+Verified in this review:
+
+- `node --test --test-isolation=none tests/owner-demo.test.mjs tests/property-category.test.mjs`: 4/4 passing.
+- `npm.cmd run build`: passing. The build copies the pinned Supabase browser bundle, so the already-dirty `vendor/` files remain intentionally unstaged.
+- `git diff --check -- . ':(exclude)vendor/**'`: passing.
+- Live local catalog review: all seven existing top-level listings render as guest houses; `До 7000 ₽` leaves one listing and one visible marker; switching to apartments removes all markers; the catalog title, count `0`, and apartment empty state update correctly.
+- Live local owner-demo review: an existing v2 browser draft was restored through the v3 fallback, including its current object and wizard step.
+- Static responsive review: `owner-demo.html` retains the one-column layout below 720 px and shared controls use bounded widths/min-width rules.
+
+Unresolved release blockers:
+
+- **FAIL:** `npm.cmd test` completed with 56/61 passing and the same five failures in `tests/rls.test.mjs`: anonymous/private-storage transaction abort, revocation permission error, publication RPC assertion after transaction abort, confirmed public contact remaining `null`, and rollback SQL syntax near `$`.
+- **BLOCKED:** `npm.cmd run test:browser -- tests/browser/owner-demo.spec.js` cannot start a worker (`spawn EPERM`), so the new autosave, validation, pricing/availability, photo persistence, and mobile browser assertions did not execute.
+- **BLOCKED:** an attempted local 390 px DevTools viewport review was not authorized by the browser control gate. No viewport override was applied. Mobile layout therefore has static-review evidence only, not a fresh rendered-browser pass.
+- The apartment path currently has no published fixture; only its zero-result state is exercised. Category-colored apartment markers cannot receive live UI coverage until an apartment fixture exists.
+
+Because required checks did not all pass, staging and commit creation were deliberately skipped.

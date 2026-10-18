@@ -41,6 +41,11 @@ async function setup(page,opts={}){
  if(opts.signedIn!==false)await page.addInitScript(s=>{if(!sessionStorage.getItem('fixture-seeded')){localStorage.setItem('sb-owner-test-auth-token',JSON.stringify(s));sessionStorage.setItem('fixture-seeded','1');}},session());
  return {requests,state};
 }
+async function addApartmentFixture(page){
+ const source=await readFile('guest-houses.js','utf8');
+ const fixture={id:'fixture_apartment_1',name:'Тестовые апартаменты',address:'Калининградская область, Нестеровский район, пос. Краснолесье, ул. Тестовая, д. 1',lat:54.955,lng:22.45,capacity:4,price:4200,amenities:['Бассейн','Кухня'],description:'Только локальная тестовая fixture.',active:true,category:'apartment'};
+ await page.route('**/guest-houses.js',route=>route.fulfill({contentType:'text/javascript; charset=utf-8',body:source+'\nwindow.GUEST_HOUSES.push('+JSON.stringify(fixture)+');'}));
+}
 test('unconfigured page fails closed',async({page})=>{
  await page.goto('/login.html');await expect(page.locator('#submit')).toBeDisabled();await expect(page.locator('#status')).toContainText('не настроено');
 });
@@ -97,6 +102,17 @@ test('catalog real addresses and visible markers stay synchronized',async({page}
   await page.locator('#catalogLocality').selectOption(locality);await expect(page.locator('#list > .item')).toHaveCount(count);
   await expect.poll(()=>page.evaluate(()=>Object.entries(markers).filter(([,m])=>map.hasLayer(m)).map(([id])=>id).sort().join(','))).toBe(await page.evaluate(()=>filtered().map(h=>h.id).sort().join(',')));
  }
+});
+
+test('apartment fixture has its own marker and obeys category and amenity filters',async({page})=>{
+ await setup(page,{signedIn:false});await addApartmentFixture(page);await page.goto('/');await page.locator('[data-s=catalog]').click();
+ await page.locator('#catalog [data-category="apartment"]').click();
+ await expect(page.locator('#list > .item')).toHaveCount(1);await expect(page.locator('#list')).toContainText('Тестовые апартаменты');
+ await expect.poll(()=>page.evaluate(()=>map.hasLayer(markers.fixture_apartment_1))).toBe(true);
+ await expect(page.locator('.leaflet-marker-icon [data-category="apartment"]')).toContainText('▣');
+ await page.locator('#catalogLocality').selectOption('Краснолесье');await expect(page.locator('#list > .item')).toHaveCount(1);
+ await page.locator('[data-f="Баня"]').first().click();await expect(page.locator('#list > .item')).toHaveCount(0);
+ await page.locator('[data-f="Бассейн"]').first().click();await expect(page.locator('#list > .item')).toHaveCount(1);
 });
 
 test('invalid recovery callback cannot update password',async({page})=>{

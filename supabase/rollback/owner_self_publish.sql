@@ -16,7 +16,7 @@ grant select (id,company_id,name,description,published,contact_phone,contact_ema
   on public.properties to authenticated;
 -- Downgrade the capability flag before returning control to the owner UI.
 create or replace function public.owner_cabinet_version() returns integer
-language sql stable security invoker set search_path='' as $ select 1 $;
+language sql stable security invoker set search_path='' as $$ select 1 $$;
 revoke all on function public.owner_cabinet_version() from public,anon;
 grant execute on function public.owner_cabinet_version() to authenticated;
 commit;

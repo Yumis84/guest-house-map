@@ -11,6 +11,10 @@ window.GUEST_HOUSES=[
   {id:'house_009',name:'«Усадьба Заеца»',address:'Калининградская область, Нестеровский район, пос. Чистые Пруды, хутор Озёрки, д. 6',lat:54.432409,lng:22.437544,capacity:20,price:null,amenities:['9 номеров','Санузел в номере','Домашнее питание','Банкетный зал','Беседки','Мангал и барбекю','Бассейн под открытым небом','Баня на дровах','Катание на лошадях','Велосипеды'],phone:'+79212600197',email:'szaec@narod.ru',site:'http://www.usadbazaeca.ru/',description:'Историческая усадьба на месте бывшего лесничества у Роминтенской пущи. Девять номеров категорий стандарт, полулюкс и люкс, всего 20 спальных мест. В номерах душ и туалет. Домашняя фермерская кухня, банкетный зал до 30 человек, беседки, бассейн, баня на дровах, прогулки верхом и на велосипедах. Стоимость уточняйте у хозяев.',active:true}
 ];
 
+// Shared listing model: every legacy record belongs to one explicit category.
+// The two nested room records remain part of their guest-house complex.
+window.GUEST_HOUSES.forEach(property=>{property.category='guest_house'});
+
 // Load integrations/enhancements after the base data is available.
 (function(){
   const load=(src)=>{

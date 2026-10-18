@@ -50,12 +50,13 @@
 
       const core=host.firstElementChild||host.querySelector('div');
       if(core){
-        core.style.setProperty('background',active?'#f2a93b':'#111815','important');
-        core.style.setProperty('background-color',active?'#f2a93b':'#111815','important');
-        core.style.setProperty('color',active?'#241707':'#f2a93b','important');
-        core.style.setProperty('border-color','#f2a93b','important');
+        const categoryColor=core.dataset.category==='apartment'?'#67b7ff':'#f2a93b';
+        core.style.setProperty('background','#111815','important');
+        core.style.setProperty('background-color','#111815','important');
+        core.style.setProperty('color',categoryColor,'important');
+        core.style.setProperty('border-color',categoryColor,'important');
         core.style.setProperty('transform',active?'scale(1.12)':'scale(1)','important');
-        core.style.setProperty('box-shadow',active?'0 8px 26px #0009, 0 0 0 4px #f2a93b55':'0 5px 16px #0006','important');
+        core.style.setProperty('box-shadow',active?'0 8px 26px #0009, 0 0 0 4px '+categoryColor+'55':'0 5px 16px #0006','important');
       }
     }
     return count>0;
