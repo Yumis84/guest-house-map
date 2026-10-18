@@ -15,6 +15,7 @@ DECLARE
   booking_a uuid := gen_random_uuid();
   booking_b uuid := gen_random_uuid();
   booking_whole uuid := gen_random_uuid();
+  booking_next uuid := gen_random_uuid();
   conflict_detected boolean := false;
 BEGIN
   INSERT INTO pms_sandbox.physical_resources(resource_id,property_id,label)
@@ -41,11 +42,11 @@ BEGIN
     RAISE EXCEPTION 'FAIL: whole apartment double booked occupied room';
   END IF;
   -- Checkout is exclusive, so next guest may check in the same day.
+  INSERT INTO pms_sandbox.reservations(reservation_id,unit_id,stay,status)
+    VALUES(booking_next,apartment,daterange('2026-11-04','2026-11-05','[)'),'confirmed');
   INSERT INTO pms_sandbox.resource_allocations(reservation_id,resource_id,stay)
-    VALUES(booking_whole,resource_a,daterange('2026-11-04','2026-11-05','[)')),
-          (booking_whole,resource_b,daterange('2026-11-04','2026-11-05','[)'));
-  -- This deliberate inconsistency demonstrates why a trusted RPC must validate
-  -- allocation stay equals reservation stay. The prototype is not production-ready.
+    VALUES(booking_next,resource_a,daterange('2026-11-04','2026-11-05','[)')),
+          (booking_next,resource_b,daterange('2026-11-04','2026-11-05','[)'));
   RAISE NOTICE 'PASS: independent rooms, overlap exclusion, adjacent dates';
 END $$;
 ROLLBACK;
