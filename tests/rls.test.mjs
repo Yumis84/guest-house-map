@@ -24,16 +24,19 @@ async function as(n,fn){
  }finally{await db.exec('rollback');}
 }
 const rows=async(sql,params=[])=>(await db.query(sql,params)).rows;
-test('anonymous sees only published properties; private photos denied',()=>as(0,async()=>{
- assert.deepEqual((await rows('select name from properties')).map(r=>r.name),['B public']);
+test('anonymous cannot read base properties; private photos denied',()=>as(0,async()=>{
+ await assert.rejects(db.query('select name from properties'),e=>e.code==='42501');
  assert.equal((await rows('select * from storage.objects')).length,0);
 }));
-for(const [n,expected] of [[1,['A draft','B public']],[2,['B draft','B public']],[3,['A draft','B public']],[4,['B public']]]){
- test('RLS reads for user '+n,()=>as(n,async()=>assert.deepEqual((await rows('select name from properties order by name')).map(r=>r.name),expected)));
+for(const [n,expected] of [[1,['A draft']],[2,['B draft','B public']],[3,['A draft']],[4,[]]]){
+ test('private owner-only property reads for user '+n,()=>as(n,async()=>{
+  const names=(await rows('select name from properties order by name')).map(r=>r.name);
+  assert.deepEqual(names,expected);
+ }));
 }
 test('membership SELECT returns only caller',()=>as(1,async()=>{const r=await rows('select * from company_members');assert.equal(r.length,1);assert.equal(r[0].user_id,uid(1));}));
 for(const n of [1,5,6])test('owner/manager/admin can update own draft and revision: '+n,()=>as(n,async()=>{
- const r=await rows('update properties set name=$1,contact_phone=$2,published=true where id=$3 returning owner_revision,name',['Edited','+7 900 123-45-67',pid(1)]);
+ const r=await rows('update properties set name=$1,contact_phone=$2 where id=$3 returning owner_revision,name',['Edited','+7 900 123-45-67',pid(1)]);
  assert.deepEqual(r,[{owner_revision:1,name:'Edited'}]);
  assert.equal((await rows('update properties set name=$1 where id=$2 and owner_revision=0 returning id',['Stale',pid(1)])).length,0);
 }));
