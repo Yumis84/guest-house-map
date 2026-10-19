@@ -1,0 +1,57 @@
+-- DRAFT ONLY. DO NOT RUN against production.
+-- Prepared from Claude HANDOFF 8a947430, 2026-10-18.
+-- This is a proposed schema for a separate Supabase branch/local PostgreSQL.
+-- It is intentionally NOT an executable migration: live public.properties columns,
+-- memberships/RLS policies and legacy IDs have not been verified.
+-- Preflight:
+-- SELECT column_name, data_type FROM information_schema.columns
+-- WHERE table_schema='public' AND table_name='properties';
+-- SELECT count(*) AS total, count(*) FILTER (WHERE published) AS published
+-- FROM public.properties; -- only if 'published' exists.
+--
+-- Proposed entities:
+-- localities(id UUID PK, slug TEXT UNIQUE, region_code TEXT, district_name TEXT,
+--   kind ENUM(city,town,settlement,village,hamlet), name TEXT, name_normalized TEXT,
+--   parent_locality_id UUID NULL, oktmo TEXT NULL, fias_guid UUID NULL,
+--   kladr TEXT NULL, is_active BOOLEAN, created_at TIMESTAMPTZ)
+-- properties: locality_id UUID NULL FK -> localities,
+--   property_kind ENUM(guest_house,apartment,cottage,hotel_complex) NULL,
+--   tourist_area TEXT NULL
+-- locality_requests: id, company_id, requested_by, district_name, kind, name,
+--   status pending/approved/rejected, created_at; owner can submit, admin approves.
+--
+-- Proposed seed (verify official locality kind/district before executing):
+-- krasnolesye | Краснолесье | Нестеровский округ
+-- dmitrievka | Дмитриевка | Нестеровский округ
+-- sosnovka | Сосновка | Нестеровский округ
+-- chistye-prudy | Чистые Пруды | Нестеровский округ
+-- ozerki | Озёрки | hamlet | parent=chistye-prudy (needs official verification)
+-- External FIAS/OKTMO/KLADR IDs: NULL until verified.
+--
+-- Legacy mapping (7 TOP-LEVEL catalog objects only):
+-- 001,002 -> krasnolesye / guest_house
+-- 003 -> dmitrievka / guest_house
+-- 004 -> krasnolesye / hotel_complex (subject to approval)
+-- 007 -> sosnovka / guest_house
+-- 008 -> dmitrievka / cottage; tourist_area='Краснолесье'
+-- 009 -> chistye-prudy / guest_house
+-- 005,006 -> units of 004, NOT public catalog properties.
+--
+-- Public read contract:
+-- public_catalog_properties: ONLY published, nondeleted, top-level properties
+--   with locality ID/name/district, property_kind and public display fields.
+-- public_catalog_localities: DISTINCT locality IDs from published public properties.
+-- No private owner fields. Enforce RLS, inspect view security_invoker vs
+-- security-definer semantics, GRANTs, owner rights and Supabase Advisor findings.
+-- Never allow unreviewed owner-created locality to enter public suggestions.
+--
+-- Proposed sandbox acceptance:
+-- T-G1 anon view returns only published
+-- T-G2 anon cannot read base private tables
+-- T-G3 new locality appears/disappears with publish/unpublish
+-- T-G4 identical locality names in distinct districts remain distinguishable
+-- T-G5 normalized duplicate in same district rejected
+-- T-G6 ё/е normalize consistently
+-- T-G7 rollback returns prior schema and permissions
+-- Only after live schema audit: implement an executable forward/rollback pair,
+-- run in sandbox, capture PASS/FAIL and migration lock/transaction plan.
