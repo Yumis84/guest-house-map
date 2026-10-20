@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {access,readFile} from 'node:fs/promises';
+import {dirname,join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=dirname(fileURLToPath(import.meta.url)),names=['index.html','widget.html','styles.css','app.js','widget.js','core.js'];
+const source=Object.fromEntries(await Promise.all(names.map(async name=>[name,await readFile(join(root,name),'utf8')]))),all=Object.values(source).join('\n');
+for(const id of ['propertySelect','unitSelect','calendar','blockForm','bookingForm','bookingList','modeSelect','embedSnippet','widgetFrame'])assert.match(source['index.html'],new RegExp(`id="${id}"`),`missing #${id}`);
+for(const id of ['widgetProperty','unitChoices','widgetCalendar','widgetForm','checkIn','checkOut','guests','widgetResult','requestForm'])assert.match(source['widget.html'],new RegExp(`id="${id}"`),`missing widget #${id}`);
+assert.match(all,/Только демонстрация|Демонстрация — не рабочая система/);assert.match(all,/не отправляется|не отправляются/);assert.match(all,/не реальная доступность|не подтверждают доступность/);assert.match(all,/Оплата не принимается|не принимают оплату/);
+assert.match(source['core.js'],/guest-house-booking-preview-v1/);assert.match(source['core.js'],/normalizeState/);assert.match(source['core.js'],/unitIds/);assert.match(source['app.js'],/data-edit/);assert.match(source['app.js'],/status='cancelled'|status:'cancelled'/);assert.match(source['app.js'],/mode/);assert.match(source['widget.js'],/mode==='request'/);assert.match(source['widget.js'],/selectedUnits/);
+assert.doesNotMatch(all,/supabase|fetch\s*\(|XMLHttpRequest|WebSocket|service[_-]?role/i);
+for(const htmlName of ['index.html','widget.html'])for(const match of source[htmlName].matchAll(/(?:href|src)="(\.\/[^"?]+)/g))await access(join(root,match[1].slice(2)));
+for(const name of ['app.js','widget.js','core.js'])assert.doesNotThrow(()=>new Function(source[name].replace(/^import .*$/mg,'').replace(/^export /mg,'')),`${name} syntax`);
+console.log('Booking preview smoke test passed.');
