@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Регистрация владельца · Краснолесье</title><link rel="stylesheet" href="./owner.css"></head>
+<body><header><a href="./">← Гостевые дома</a></header>
+<main class="auth"><h1>Личный кабинет</h1><p>Управляйте описанием, контактами и фотографиями своих гостевых домов.</p>
+<section class="panel"><div class="tabs" id="tabs" aria-label="Действие"><button type="button" id="signup" class="secondary" aria-pressed="true">Регистрация</button><button type="button" id="signin" class="secondary" aria-pressed="false">Вход</button></div>
+<h2 id="formTitle">Создание аккаунта</h2>
+<form id="form"><div id="emailField"><label for="email">Email</label><input id="email" type="email" autocomplete="email" maxlength="254" required></div>
+<div id="passwordField"><label for="password">Пароль</label><input id="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></div>
+<div id="confirmField"><label for="confirm">Повторите пароль</label><input id="confirm" type="password" autocomplete="new-password" required maxlength="128"></div>
+<p id="hint" class="muted">Не менее 8 символов. Используйте уникальный пароль.</p><button class="full" type="submit" id="submit" disabled>Зарегистрироваться</button></form>
+<div class="actions"><button class="secondary" id="recovery" type="button">Забыли пароль?</button></div>
+<p id="status" role="status" aria-live="polite">Подключаемся…</p></section>
+<p>Регистрация не даёт доступа к объектам автоматически. Администратор проверяет владельца и назначает доступ к компании.</p></main>
+<script src="./supabase-public-config.js"></script><script src="./vendor/supabase.js"></script><script type="module" src="./owner-auth.js"></script></body></html>
