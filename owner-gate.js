@@ -1,13 +1,13 @@
-import {getClient} from './owner-common.js';
-const heading=document.querySelector('#heading'),message=document.querySelector('#message'),signout=document.querySelector('#signout');
-try {
- const client=getClient();
- const {data:{user},error}=await client.auth.getUser();
- if(error||!user){location.replace('./login.html');}
- else {
-  heading.textContent='Вы вошли в личный кабинет';
-  message.textContent='Аккаунт: '+(user.email||'зарегистрирован')+'. Объекты пока не привязаны.';
-  signout.hidden=false;
-  signout.onclick=async()=>{const {error}=await client.auth.signOut();if(error){message.textContent='Не удалось выйти. Повторите попытку.';return;}location.replace('./login.html');};
- }
-} catch {heading.textContent='Не удалось проверить вход';message.textContent='Проверьте соединение и обновите страницу.';}
+import {getClient,errorMessage} from './owner-common.js';
+import {loadAccessibleProperties} from './owner-access.js';
+const $=selector=>document.querySelector(selector),views=[...document.querySelectorAll('[data-view]')],links=[...document.querySelectorAll('[data-view-link]')];
+let client;
+function selectView(){const requested=location.hash.slice(1),view=views.some(node=>node.dataset.view===requested)?requested:'properties';views.forEach(node=>{node.hidden=node.dataset.view!==view;});links.forEach(link=>link.toggleAttribute('aria-current',link.dataset.viewLink===view));}
+function show(title,text,{retry=false}={}){$('#loadingMark').hidden=true;$('#heading').textContent=title;$('#message').textContent=text;$('#reload').hidden=!retry;}
+function renderProperties(items){const container=$('#properties');container.replaceChildren();if(!items.length){show('Объектов пока нет','Ваш аккаунт ещё не привязан ни к одному объекту или компании. Обратитесь к администратору — регистрация сама по себе не выдаёт доступ.');const empty=document.createElement('div');empty.className='empty-illustration';empty.setAttribute('aria-hidden','true');empty.textContent='⌂';container.append(empty);return;}show('Доступные объекты',`${items.length} ${items.length===1?'объект':'объекта'} в вашем кабинете.`);for(const property of items){const card=document.createElement('article');card.className='property-card';const icon=document.createElement('div');icon.className='property-icon';icon.setAttribute('aria-hidden','true');icon.textContent='⌂';const content=document.createElement('div'),name=document.createElement('h3'),meta=document.createElement('p'),badge=document.createElement('span');name.textContent=property.name||'Объект без названия';meta.textContent='Доступ предоставлен через членство';badge.className='status-pill';badge.textContent=property.published?'Опубликован':'Не опубликован';content.append(name,meta,badge);card.append(icon,content);container.append(card);}}
+async function load(){
+  $('#reload').hidden=true;$('#loadingMark').hidden=false;$('#properties').replaceChildren();$('#heading').textContent='Загружаем объекты…';$('#message').textContent='Проверяем права доступа.';
+  try{const {data,error}=await client.auth.getUser();if(error||!data.user){location.replace('./login.html');return;}$('#accountEmail').textContent=data.user.email||'Email не указан';renderProperties(await loadAccessibleProperties(client,data.user.id));}catch(error){show('Не удалось загрузить объекты',errorMessage(error),{retry:true});}
+}
+window.addEventListener('hashchange',selectView);selectView();$('#reload').onclick=load;
+try{client=getClient();const {data,error}=await client.auth.getUser();if(error||!data.user){location.replace('./login.html');}else{$('#accountEmail').textContent=data.user.email||'Email не указан';$('#signout').hidden=false;$('#signout').onclick=async()=>{$('#signout').disabled=true;const {error}=await client.auth.signOut();if(error){$('#signout').disabled=false;show('Не удалось выйти','Проверьте соединение и повторите попытку.');return;}location.replace('./login.html');};await load();}}catch(error){show('Кабинет недоступен',errorMessage(error),{retry:true});}

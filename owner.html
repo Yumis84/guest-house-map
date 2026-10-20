@@ -1,1 +1,42 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Личный кабинет · Краснолесье</title><link rel="stylesheet" href="./owner.css"></head><body><header><a href="./">← Каталог гостевых домов</a></header><main class="auth"><h1>Личный кабинет</h1><section class="panel"><h2 id="heading">Проверяем вход…</h2><p id="message" role="status">Подождите.</p><button id="signout" type="button" hidden>Выйти</button></section><p>На следующем этапе мы привяжем ваш гостевой дом к аккаунту. Пока чужие объекты недоступны.</p></main><script src="./supabase-public-config.js"></script><script src="./vendor/supabase.js"></script><script type="module" src="./owner-gate.js"></script></body></html>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Кабинет владельца · Краснолесье</title>
+  <link rel="stylesheet" href="./owner.css">
+</head>
+<body class="owner-dashboard">
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Краснолесье — каталог"><span class="brand-mark" aria-hidden="true">К</span><span><strong>Краснолесье</strong><small>Кабинет владельца</small></span></a>
+    <button id="signout" class="signout" type="button" hidden>Выйти</button>
+  </header>
+  <div class="dashboard-shell">
+    <aside class="dashboard-sidebar" aria-label="Навигация кабинета">
+      <nav id="dashboardNav">
+        <a href="#properties" data-view-link="properties" aria-current="page"><span aria-hidden="true">⌂</span> Мои объекты</a>
+        <a href="#reservations" data-view-link="reservations"><span aria-hidden="true">▤</span> Бронирования</a>
+        <a href="#calendar" data-view-link="calendar"><span aria-hidden="true">□</span> Календарь</a>
+        <a href="#settings" data-view-link="settings"><span aria-hidden="true">⚙</span> Настройки</a>
+        <span class="disabled-nav" aria-disabled="true" title="Будет доступно на следующем этапе"><span aria-hidden="true">＋</span> Добавить объект <small>скоро</small></span>
+      </nav>
+      <a class="catalog-link" href="./">← Вернуться в каталог</a>
+    </aside>
+    <main>
+      <section class="dashboard-view" data-view="properties">
+        <div class="page-heading"><div><p class="eyebrow">Управление размещением</p><h1>Мои объекты</h1><p>Здесь видны только объекты, к которым у вашего аккаунта есть доступ.</p></div><button class="add-property" type="button" disabled aria-describedby="addPropertyNote">＋ Добавить объект</button></div>
+        <p id="addPropertyNote" class="stage-note">Добавление станет доступно на следующем этапе после запуска защищённого сценария записи.</p>
+        <section id="propertyPanel" class="content-card" aria-labelledby="heading">
+          <div class="loading-mark" id="loadingMark" aria-hidden="true"></div><h2 id="heading">Проверяем доступ…</h2><p id="message" role="status" aria-live="polite">Подключаемся к кабинету.</p>
+          <button id="reload" class="secondary" type="button" hidden>Попробовать снова</button><div id="properties" class="property-grid"></div>
+        </section>
+      </section>
+      <section class="dashboard-view coming-next" data-view="reservations" hidden><div class="coming-icon" aria-hidden="true">▤</div><p class="eyebrow">Следующий этап</p><h1>Бронирования</h1><p>Заявки гостей появятся здесь после подключения защищённого контура бронирований.</p><span class="status-pill">Скоро</span></section>
+      <section class="dashboard-view coming-next" data-view="calendar" hidden><div class="coming-icon" aria-hidden="true">□</div><p class="eyebrow">Следующий этап</p><h1>Календарь</h1><p>Управление доступностью и блокировками дат пока не подключено.</p><span class="status-pill">Скоро</span></section>
+      <section class="dashboard-view" data-view="settings" hidden><div class="page-heading"><div><p class="eyebrow">Аккаунт</p><h1>Настройки</h1><p>Данные текущей учётной записи.</p></div></div><section class="content-card settings-card"><span class="account-avatar" aria-hidden="true">●</span><div><small>Email</small><strong id="accountEmail">—</strong></div></section></section>
+    </main>
+  </div>
+  <script src="./supabase-public-config.js"></script><script src="./vendor/supabase.js"></script><script type="module" src="./owner-gate.js"></script>
+</body>
+</html>
