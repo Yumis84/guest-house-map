@@ -1,6 +1,6 @@
 import {getClient,errorMessage} from './owner-common.js';
 const $=s=>document.querySelector(s);
-let mode='signup',busy=false,client,recoverySession=false;
+let mode='signin',busy=false,client,recoverySession=false;
 const labels={signin:'Войти',signup:'Зарегистрироваться',recovery:'Отправить ссылку',update:'Сохранить пароль'};
 function setMode(next){
   if(busy)return;
@@ -22,6 +22,7 @@ for(const m of ['signin','signup','recovery'])$('#'+m).onclick=()=>setMode(m);
 function setBusy(value){busy=value;$('#form').setAttribute('aria-busy',String(value));document.querySelectorAll('button').forEach(b=>b.disabled=value||!client);}
 try{
   client=getClient();
+  setMode('signin');
   client.auth.onAuthStateChange((event)=>{
     if(event==='PASSWORD_RECOVERY'){recoverySession=true;setMode('update');}
   });
