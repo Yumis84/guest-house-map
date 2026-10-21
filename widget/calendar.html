@@ -27,7 +27,7 @@
     const API_URL='https://ojifyifewlwzkysgxogo.supabase.co';
     const PUBLISHABLE_KEY='sb_publishable_cliMT3e4u-QKFGaLyKhovg_WEJvw508';
     const state=document.getElementById('loadState'),days=document.getElementById('calendarDays'),title=document.getElementById('monthTitle');
-    const now=new Date(),todayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,month=new Date(now.getFullYear(),now.getMonth(),1);let blocks=[];let availabilityLoaded=false;
+    const now=new Date(),month=new Date(now.getFullYear(),now.getMonth(),1);let blocks=[];let availabilityLoaded=false;
     const pad=n=>String(n).padStart(2,'0');
     const iso=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
     const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
@@ -37,7 +37,7 @@
       document.getElementById('prevMonth').disabled=y===now.getFullYear()&&m===now.getMonth();const fragment=document.createDocumentFragment();
       for(let i=0;i<offset;i++){const blank=document.createElement('span');blank.className='day empty';blank.setAttribute('aria-hidden','true');fragment.append(blank)}
       for(let d=1;d<=count;d++){
-        const date=new Date(y,m,d),cell=document.createElement('span');const dateKey=iso(y,m,d);if(dateKey<todayKey){const blank=document.createElement('span');blank.className='day empty';blank.setAttribute('aria-hidden','true');fragment.append(blank);continue;}const occupied=blocks.some(b=>dateKey>=b.starts_on&&dateKey<b.ends_on);cell.className='day'+(occupied?' busy':'')+(sameDay(date,now)?' today':'');cell.setAttribute('role','gridcell');cell.setAttribute('aria-disabled','true');cell.setAttribute('aria-label',`${d} ${title.textContent}: ${occupied?'занято':'доступность не подтверждена'}`);cell.dataset.date=iso(y,m,d);cell.innerHTML=`<span>${d}</span><small>${occupied?'занято':'уточнить'}</small>`;fragment.append(cell)
+        const date=new Date(y,m,d),cell=document.createElement('span');const dateKey=iso(y,m,d);const occupied=blocks.some(b=>dateKey>=b.starts_on&&dateKey<b.ends_on);cell.className='day'+(occupied?' busy':'')+(sameDay(date,now)?' today':'');cell.setAttribute('role','gridcell');cell.setAttribute('aria-disabled','true');cell.setAttribute('aria-label',`${d} ${title.textContent}: ${occupied?'занято':'доступность не подтверждена'}`);cell.dataset.date=iso(y,m,d);cell.innerHTML=`<span>${d}</span><small>${occupied?'занято':'уточнить'}</small>`;fragment.append(cell)
       }
       days.replaceChildren(fragment)
     }
