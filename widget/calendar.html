@@ -57,7 +57,7 @@
     // Report the actual content height to approved parent sites, including six-row months.
     const HEIGHT_MESSAGE='guest-house-calendar:resize';
     function reportHeight(){
-      const height=Math.ceil(Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,document.querySelector('.widget').getBoundingClientRect().bottom))+24;
+      const height=Math.ceil(document.querySelector('.widget').getBoundingClientRect().bottom)+12;
       if(window.parent!==window)window.parent.postMessage({type:HEIGHT_MESSAGE,height},'*');
     }
     if(typeof ResizeObserver!=='undefined'){
