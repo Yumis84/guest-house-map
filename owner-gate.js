@@ -2,7 +2,7 @@ import {getUnit,getBlocks,addBlock,deleteBlock} from './owner-calendar.js?v=2026
 import {getClient,errorMessage} from './owner-common.js';
 import {loadAccessibleProperties} from './owner-access.js?v=20261021b';
 const $=selector=>document.querySelector(selector),views=[...document.querySelectorAll('[data-view]')],links=[...document.querySelectorAll('[data-view-link]')];
-let client,selectedUnit=null,calendarBlocks=[];const selectedDays=new Set(),displayedMonth=new Date();displayedMonth.setDate(1);
+let client,selectedUnit=null,calendarBlocks=[];const selectedDays=new Set();let rangeAnchor=null;const displayedMonth=new Date();displayedMonth.setDate(1);
 const dayISO=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const addDays=(date,n)=>{const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+n);return dayISO(d.getFullYear(),d.getMonth(),d.getDate());};
 const isOccupied=day=>calendarBlocks.some(b=>day>=b.starts_on&&day<b.ends_on);
@@ -13,7 +13,7 @@ function syncSelection(){
  $('#blockStart').value=consecutive?first:'';
  $('#blockEnd').value=consecutive?addDays(last,1):'';
  const today=new Date(),todayISO=dayISO(today.getFullYear(),today.getMonth(),today.getDate());$('#blockForm button').disabled=!consecutive||first<todayISO;
- $('#ownerSelection').textContent=!selected.length?'Нажимайте на нужные дни. Повторное нажатие снимает выделение.':!consecutive?'Выбраны даты с пропусками. Для сохранения выделите дни подряд.':selected.length===1?`Выбран 1 день: ${first}`:`Выбрано дней: ${selected.length} · с ${first} по ${last} включительно`;
+ $('#ownerSelection').textContent=!selected.length?'Нажмите начало и конец периода: промежуточные даты выделятся автоматически.':!consecutive?'Выбраны даты с пропусками. Для сохранения выделите дни подряд.':selected.length===1?`Выбран 1 день: ${first}`:`Выбрано дней: ${selected.length} · с ${first} по ${last} включительно`;
 }
 function drawOwnerCalendar(){
  const y=displayedMonth.getFullYear(),m=displayedMonth.getMonth(),container=$('#ownerDays');container.replaceChildren();
@@ -28,7 +28,7 @@ function drawOwnerCalendar(){
   btn.setAttribute('aria-pressed',String(chosen));
   btn.disabled=busy||past;
   btn.title=busy?'Уже занято':past?'Прошедшая дата':chosen?'Снять выделение':'Выделить день';
-  btn.onclick=()=>{if(selectedDays.has(date))selectedDays.delete(date);else selectedDays.add(date);syncSelection();drawOwnerCalendar();};
+  btn.onclick=()=>{if(!rangeAnchor){selectedDays.clear();selectedDays.add(date);rangeAnchor=date;}else if(rangeAnchor===date){selectedDays.clear();rangeAnchor=null;}else{const start=date<rangeAnchor?date:rangeAnchor,end=date>rangeAnchor?date:rangeAnchor;const days=[];for(let cursor=start;cursor<=end;cursor=addDays(cursor,1)){if(isOccupied(cursor)){ $('#calendarStatus').textContent='В выбранном периоде есть занятые дни.';return;}days.push(cursor);}selectedDays.clear();days.forEach(day=>selectedDays.add(day));rangeAnchor=null;}syncSelection();drawOwnerCalendar();};
   container.append(btn);
  }
 }
@@ -40,8 +40,8 @@ async function load(){
   $('#reload').hidden=true;$('#loadingMark').hidden=false;$('#properties').replaceChildren();$('#heading').textContent='Загружаем объекты…';$('#message').textContent='Проверяем права доступа.';
   try{const {data,error}=await client.auth.getUser();if(error||!data.user){location.replace('./login.html');return;}$('#accountEmail').textContent=data.user.email||'Email не указан';const items=await loadAccessibleProperties(client,data.user.id);renderProperties(items);const select=$('#calendarProperty');select.replaceChildren();for(const p of items){const option=document.createElement('option');option.value=p.id;option.textContent=p.name;select.append(option);}await refreshCalendar();}catch(error){show('Не удалось загрузить объекты',errorMessage(error),{retry:true});}
 }
-$('#ownerPrev').onclick=()=>{displayedMonth.setMonth(displayedMonth.getMonth()-1);drawOwnerCalendar();};$('#ownerNext').onclick=()=>{displayedMonth.setMonth(displayedMonth.getMonth()+1);drawOwnerCalendar();};$('#calendarProperty').onchange=()=>{selectedDays.clear();refreshCalendar();};$('#blockForm').onsubmit=event=>{event.preventDefault();const status=$('#calendarStatus');if(!selectedUnit){status.textContent='Для этого объекта пока не настроено размещение. Сохранение недоступно.';return;}const first=$('#blockStart').value,last=$('#blockEnd').value;if(!first||!last)return;$('#blockDialogDates').textContent=`${first} — ${last} (дата выезда)`;$('#blockNote').value='';$('#blockDialog').showModal();};
+$('#ownerPrev').onclick=()=>{displayedMonth.setMonth(displayedMonth.getMonth()-1);drawOwnerCalendar();};$('#ownerNext').onclick=()=>{displayedMonth.setMonth(displayedMonth.getMonth()+1);drawOwnerCalendar();};$('#calendarProperty').onchange=()=>{selectedDays.clear();rangeAnchor=null;refreshCalendar();};$('#blockForm').onsubmit=event=>{event.preventDefault();const status=$('#calendarStatus');if(!selectedUnit){status.textContent='Для этого объекта пока не настроено размещение. Сохранение недоступно.';return;}const first=$('#blockStart').value,last=$('#blockEnd').value;if(!first||!last)return;$('#blockDialogDates').textContent=`${first} — ${last} (дата выезда)`;$('#blockNote').value='';$('#blockDialog').showModal();};
 $('#cancelBlock').onclick=()=>$('#blockDialog').close();
-$('#confirmBlockForm').onsubmit=async event=>{event.preventDefault();const status=$('#calendarStatus'),button=$('#confirmBlock');if(!selectedUnit)return;button.disabled=true;try{await addBlock(client,selectedUnit.id,$('#blockStart').value,$('#blockEnd').value,$('#blockNote').value);$('#blockDialog').close();selectedDays.clear();await refreshCalendar();status.textContent='Даты успешно заблокированы и сохранены.';}catch(e){status.textContent=errorMessage(e);$('#blockDialog').close();}finally{button.disabled=false;syncSelection();}};
+$('#confirmBlockForm').onsubmit=async event=>{event.preventDefault();const status=$('#calendarStatus'),button=$('#confirmBlock');if(!selectedUnit)return;button.disabled=true;try{await addBlock(client,selectedUnit.id,$('#blockStart').value,$('#blockEnd').value,$('#blockNote').value);$('#blockDialog').close();selectedDays.clear();rangeAnchor=null;await refreshCalendar();status.textContent='Даты успешно заблокированы и сохранены.';}catch(e){status.textContent=errorMessage(e);$('#blockDialog').close();}finally{button.disabled=false;syncSelection();}};
 window.addEventListener('hashchange',selectView);selectView();drawOwnerCalendar();$('#reload').onclick=load;
 try{client=getClient();const {data,error}=await client.auth.getUser();if(error||!data.user){location.replace('./login.html');}else{$('#accountEmail').textContent=data.user.email||'Email не указан';$('#signout').hidden=false;$('#signout').onclick=async()=>{$('#signout').disabled=true;const {error}=await client.auth.signOut();if(error){$('#signout').disabled=false;show('Не удалось выйти','Проверьте соединение и повторите попытку.');return;}location.replace('./login.html');};await load();}}catch(error){show('Кабинет недоступен',errorMessage(error),{retry:true});}
