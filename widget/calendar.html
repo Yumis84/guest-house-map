@@ -54,7 +54,22 @@
     }
     document.getElementById('prevMonth').addEventListener('click',()=>{month.setMonth(month.getMonth()-1);render()});
     document.getElementById('nextMonth').addEventListener('click',()=>{month.setMonth(month.getMonth()+1);render()});
-    render();checkInventory();
+    // Report the actual content height to approved parent sites, including six-row months.
+    const HEIGHT_MESSAGE='guest-house-calendar:resize';
+    function reportHeight(){
+      const height=Math.ceil(Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,document.querySelector('.widget').getBoundingClientRect().bottom))+24;
+      if(window.parent!==window)window.parent.postMessage({type:HEIGHT_MESSAGE,height},'*');
+    }
+    if(typeof ResizeObserver!=='undefined'){
+      const observer=new ResizeObserver(reportHeight);
+      observer.observe(document.querySelector('.widget'));
+      observer.observe(document.body);
+    }
+    window.addEventListener('load',reportHeight);
+    window.addEventListener('resize',reportHeight);
+    if(document.fonts?.ready)document.fonts.ready.then(reportHeight);
+        render();checkInventory();
+    reportHeight();
   })();
   </script>
 </body>
