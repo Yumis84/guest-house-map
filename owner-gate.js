@@ -1,5 +1,5 @@
 import {getClient,errorMessage} from './owner-common.js';
-import {loadAccessibleProperties} from './owner-access.js';
+import {loadAccessibleProperties} from './owner-access.js?v=20261021b';
 const $=selector=>document.querySelector(selector),views=[...document.querySelectorAll('[data-view]')],links=[...document.querySelectorAll('[data-view-link]')];
 let client;
 function selectView(){const requested=location.hash.slice(1),view=views.some(node=>node.dataset.view===requested)?requested:'properties';views.forEach(node=>{node.hidden=node.dataset.view!==view;});links.forEach(link=>link.toggleAttribute('aria-current',link.dataset.viewLink===view));}
