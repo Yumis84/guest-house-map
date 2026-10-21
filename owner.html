@@ -33,10 +33,10 @@
         </section>
       </section>
       <section class="dashboard-view coming-next" data-view="reservations" hidden><div class="coming-icon" aria-hidden="true">▤</div><p class="eyebrow">Следующий этап</p><h1>Бронирования</h1><p>Заявки гостей появятся здесь после подключения защищённого контура бронирований.</p><span class="status-pill">Скоро</span></section>
-      <section class="dashboard-view coming-next" data-view="calendar" hidden><div class="coming-icon" aria-hidden="true">□</div><p class="eyebrow">Следующий этап</p><h1>Календарь</h1><p>Управление доступностью и блокировками дат пока не подключено.</p><span class="status-pill">Скоро</span></section>
+      <section class="dashboard-view" data-view="calendar" hidden><div class="page-heading"><div><p class="eyebrow">Управление занятостью</p><h1>Календарь</h1><p>Выберите объект, даты заезда и выезда. День выезда не блокируется.</p></div></div><section class="content-card"><label for="calendarProperty">Гостевой дом</label><select id="calendarProperty" style="display:block;width:100%;padding:14px;margin:10px 0 18px;border:1px solid #b9ccc3;border-radius:12px"><option value="">Загрузка объектов…</option></select><form id="blockForm" style="display:grid;gap:14px"><label>Заезд <input id="blockStart" type="date" required style="display:block;width:100%;padding:12px;margin-top:7px"></label><label>Выезд <input id="blockEnd" type="date" required style="display:block;width:100%;padding:12px;margin-top:7px"></label><button type="submit" class="secondary">Отметить как занятые</button></form><p id="calendarStatus" role="status" aria-live="polite" style="margin-top:16px">Загружаем календарь…</p><h2>Занятые периоды</h2><div id="calendarBlocks"></div></section></section>
       <section class="dashboard-view" data-view="settings" hidden><div class="page-heading"><div><p class="eyebrow">Аккаунт</p><h1>Настройки</h1><p>Данные текущей учётной записи.</p></div></div><section class="content-card settings-card"><span class="account-avatar" aria-hidden="true">●</span><div><small>Email</small><strong id="accountEmail">—</strong></div></section></section>
     </main>
   </div>
-  <script src="./supabase-public-config.js"></script><script src="./vendor/supabase.js"></script><script type="module" src="./owner-gate.js?v=20261021b"></script>
+  <script src="./supabase-public-config.js"></script><script src="./vendor/supabase.js"></script><script type="module" src="./owner-gate.js?v=20261021d"></script>
 </body>
 </html>
