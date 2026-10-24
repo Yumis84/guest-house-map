@@ -44,4 +44,3 @@ try{
   mode='signedout';await page.goto(base+'/owner.html#widget');await page.waitForURL('**/login.html');
   assert.deepEqual(errors,[]);console.log('PASS: desktop/mobile owner navigation, scoped selection, 3 live previews, invalid settings, unavailable object, auth redirect, no booking writes.');
 }finally{await browser.close();server.close();}
-
