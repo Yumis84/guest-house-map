@@ -17,7 +17,7 @@
 .owner-dashboard [data-view="calendar"] #ownerSelection{margin-top:10px!important}
 .owner-dashboard [data-view="calendar"] #blockForm{gap:8px!important}
 }
-</style></head>
+</style><link rel="stylesheet" href="./owner-widget.css"></head>
 <body class="owner-dashboard">
   <header class="topbar">
     <a class="brand" href="./" aria-label="Гостевые дома — каталог"><span class="brand-mark" aria-hidden="true">⌂</span><span><strong>Гостевые дома</strong><small>Кабинет владельца</small></span></a>
@@ -29,7 +29,7 @@
         <a href="#properties" data-view-link="properties" aria-current="page"><span aria-hidden="true">⌂</span> Мои объекты</a>
         <a href="#reservations" data-view-link="reservations"><span aria-hidden="true">▤</span> Бронирования</a>
         <a href="#calendar" data-view-link="calendar"><span aria-hidden="true">□</span> Календарь</a>
-        <a href="#settings" data-view-link="settings"><span aria-hidden="true">⚙</span> Настройки</a>
+        <a href="#widget" data-view-link="widget">▣ Виджет бронирования</a><a href="#settings" data-view-link="settings"><span aria-hidden="true">⚙</span> Настройки</a>
         <span class="disabled-nav" aria-disabled="true" title="Будет доступно на следующем этапе"><span aria-hidden="true">＋</span> Добавить объект <small>скоро</small></span>
       </nav>
       <a class="catalog-link" href="./">← Вернуться в каталог</a>
@@ -45,7 +45,26 @@
       </section>
       <section class="dashboard-view coming-next" data-view="reservations" hidden><div class="coming-icon" aria-hidden="true">▤</div><p class="eyebrow">Следующий этап</p><h1>Бронирования</h1><p>Заявки гостей появятся здесь после подключения защищённого контура бронирований.</p><span class="status-pill">Скоро</span></section>
       <section class="dashboard-view" data-view="calendar" hidden><div class="page-heading"><div><p class="eyebrow">Управление занятостью</p><h1>Календарь</h1><p>Выберите дату начала и дату окончания. Все дни между ними выделятся автоматически.</p></div></div><section class="content-card"><label for="calendarProperty">Гостевой дом</label><select id="calendarProperty" style="display:block;width:100%;padding:14px;margin:10px 0 18px;border:1px solid #b9ccc3;border-radius:12px"><option value="">Загрузка объектов…</option></select><div class="owner-cal-nav" style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:12px 0"><button id="ownerPrev" type="button" class="secondary">‹</button><strong id="ownerMonth"></strong><button id="ownerNext" type="button" class="secondary">›</button></div><div id="ownerDays" class="owner-cal-days" aria-label="Выбор дат"></div><p id="ownerSelection" style="margin-top:14px;min-height:3.2em;line-height:1.6">Нажмите дату начала, затем дату окончания периода.</p><form id="blockForm" style="display:grid;gap:12px"><input id="blockStart" type="hidden" required><input id="blockEnd" type="hidden" required><button type="submit" class="secondary" disabled>Заблокировать выбранные даты</button></form><dialog id="blockDialog" style="border:1px solid #ccd8d0;border-radius:18px;padding:24px;width:min(92vw,440px);max-width:440px;color:#243b30;background:white;box-shadow:0 20px 60px #0003;color-scheme:light"><form id="confirmBlockForm" style="display:grid;gap:14px"><h2 style="margin:0">Заблокировать даты</h2><p id="blockDialogDates" style="margin:0"></p><label for="blockNote">Заметка (необязательно)</label><textarea id="blockNote" maxlength="500" rows="3" placeholder="Например: ремонт, личное использование" style="width:100%;box-sizing:border-box;border:1px solid #b9ccc3;border-radius:10px;padding:12px;font:inherit;background:#fff;color:#243b30;caret-color:#23644f;color-scheme:light"></textarea><p style="font-size:13px;color:#68716b;margin:0">Имя и телефон гостя будут добавлены в отдельную защищённую карточку бронирования. Не указывайте их в заметке блокировки.</p><div style="display:flex;gap:10px"><button type="button" id="cancelBlock" class="secondary" style="flex:1">Отмена</button><button type="submit" id="confirmBlock" style="flex:1;background:#23644f;color:white;border:0;border-radius:10px;padding:12px">Подтвердить</button></div></form></dialog><p id="calendarStatus" role="status" aria-live="polite" style="margin-top:16px">Загружаем календарь…</p><h2>Заявки гостей</h2><div id="guestRequests" aria-live="polite"></div><h2>Занятые периоды</h2><div id="calendarBlocks"></div></section></section>
-      <section class="dashboard-view" data-view="settings" hidden><div class="page-heading"><div><p class="eyebrow">Аккаунт</p><h1>Настройки</h1><p>Данные текущей учётной записи.</p></div></div><section class="content-card settings-card"><span class="account-avatar" aria-hidden="true">●</span><div><small>Email</small><strong id="accountEmail">—</strong></div></section></section>
+<section class="dashboard-view" data-view="widget" hidden>
+<div class="page-heading"><div><p class="eyebrow">Для вашего сайта</p><h1>Виджет бронирования</h1><p>Настройте виджет и скопируйте весь код.</p></div></div>
+<p id="widgetNotice" role="status">Загружаем доступные объекты…</p>
+<div class="widget-layout"><section class="content-card" aria-label="Настройки виджета">
+<label for="widgetProperty">Объект</label><select id="widgetProperty"><option value="">Загрузка объектов…</option></select>
+<fieldset id="widgetControls" disabled><legend>Внешний вид</legend>
+<label for="widgetType">Тип</label><select id="widgetType"><option value="calendar">Календарь и форма</option><option value="compact">Компактная форма</option><option value="button">Кнопка</option></select>
+<small>Компактная форма раскрывается по нажатию. Кнопка открывает форму в новой вкладке.</small>
+<label for="widgetColor">Цвет рамки и кнопки</label><input id="widgetColor" type="color" value="#226b50">
+<label for="widgetRadius">Скругление, px</label><input id="widgetRadius" type="number" min="0" max="32" value="18">
+<label for="widgetWidth">Максимальная ширина, px</label><input id="widgetWidth" type="number" min="280" max="960" value="720">
+<label class="checkbox-label"><input id="widgetFluid" type="checkbox" checked> По ширине сайта</label>
+<small>На узком экране виджет всегда помещается по ширине. Цвета самого календаря сохраняются.</small></fieldset></section>
+<section class="content-card" aria-label="Предпросмотр и код"><h2>Живой предпросмотр</h2>
+<label for="widgetViewport">Экран</label><select id="widgetViewport"><option value="desktop">Десктоп</option><option value="mobile">Мобильный · 375 px</option></select>
+<p>Подключён реальный виджет. Отправка формы создаёт настоящую заявку.</p>
+<iframe id="widgetPreview" title="Предпросмотр виджета бронирования" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" hidden></iframe>
+<h2>Код для сайта</h2><label for="widgetCode">Вставьте весь код в HTML-блок сайта</label><textarea id="widgetCode" readonly spellcheck="false"></textarea>
+<button id="widgetCopy" type="button" disabled>Скопировать код</button><p id="widgetStatus" role="status" aria-live="polite"></p>
+<small>Код включает обработчик автоматической высоты. Для нескольких вставок создавайте код в новых вкладках кабинета. Если конструктор удаляет script, автоматическая высота не заработает.</small></section></div></section>      <section class="dashboard-view" data-view="settings" hidden><div class="page-heading"><div><p class="eyebrow">Аккаунт</p><h1>Настройки</h1><p>Данные текущей учётной записи.</p></div></div><section class="content-card settings-card"><span class="account-avatar" aria-hidden="true">●</span><div><small>Email</small><strong id="accountEmail">—</strong></div></section></section>
     </main>
   </div>
   <script src="./supabase-public-config.js"></script><script src="./vendor/supabase.js"></script><script type="module" src="./owner-gate.js?v=20261021role1"></script>
