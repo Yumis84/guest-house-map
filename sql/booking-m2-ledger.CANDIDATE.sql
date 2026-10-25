@@ -37,7 +37,7 @@ returns table(starts_on date,ends_on date) language sql set search_path='' as $$
 $$;
 create or replace function public.booking_submit(p_widget text,p_payload jsonb,p_idempotency uuid,p_fingerprint text,p_actor text) returns jsonb
 language plpgsql security definer set search_path='' as $$
-declare w public.widget_configs;a widget_private.activation;r widget_private.requests;h widget_private.holds;d1 date;d2 date;g integer;t timestamptz;held boolean:=false;
+declare w public.widget_configs;a widget_private.activation;r widget_private.requests;h widget_private.holds;d1 date;d2 date;g integer;t timestamptz;held boolean:=false;server_fingerprint text;
 begin
  if p_idempotency is null or p_fingerprint is null or p_fingerprint !~ '^[a-f0-9]{64}$' or p_actor is null or p_actor !~ '^[a-f0-9]{64}$' or jsonb_typeof(p_payload) is distinct from 'object' then raise exception 'invalid_payload' using errcode='22023';end if;
  begin
@@ -48,6 +48,7 @@ begin
  or jsonb_typeof(p_payload->'name') is distinct from 'string' or length(trim(p_payload->>'name')) not between 1 and 120
  or coalesce(p_payload->>'phone','') !~ '^\+[1-9][0-9]{6,14}$' or p_payload->'consent' is distinct from 'true'::jsonb
  or jsonb_typeof(p_payload->'comment') is distinct from 'string' or length(p_payload->>'comment')>1000 then raise exception 'invalid_payload' using errcode='22023';end if;
+ server_fingerprint=pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(jsonb_build_object('checkin',d1,'checkout',d2,'guests',g,'name',trim(p_payload->>'name'),'phone',p_payload->>'phone','comment',trim(p_payload->>'comment'),'consent',true)::text,'UTF8')),'hex');
  perform pg_catalog.pg_advisory_xact_lock(739251,1);perform widget_private.expire_locked();
  select * into w from public.widget_configs where public_id=p_widget and archived_at is null for share;
  if not found or public.widget_v2_config(p_widget) is null then raise exception 'widget_unavailable' using errcode='55000';end if;
@@ -57,13 +58,13 @@ begin
  if g>a.capacity then raise exception 'invalid_payload' using errcode='22023';end if;
  select * into r from widget_private.requests where widget_id=w.id and idempotency=p_idempotency;
  if found then
- if r.fingerprint<>p_fingerprint then raise exception 'idempotency_conflict' using errcode='23505';end if;
+ if r.fingerprint<>server_fingerprint then raise exception 'idempotency_conflict' using errcode='23505';end if;
  return jsonb_build_object('accepted',true,'requestId',r.id);end if;
  if (select count(*) from widget_private.holds quota_hold join widget_private.requests x on x.id=quota_hold.request_id join widget_private.contacts c on c.request_id=x.id where quota_hold.status='active' and quota_hold.expires_at>clock_timestamp() and (x.actor_hash=p_actor or c.phone=p_payload->>'phone'))>=2 then raise exception 'hold_limit' using errcode='54000';end if;
  if not exists(select 1 from public.unit_resource_requirements where unit_id=w.unit_id) then raise exception 'inventory_unavailable' using errcode='55000';end if;
  t=clock_timestamp();
  insert into widget_private.requests(widget_id,unit_id,checkin,checkout,guests,expires_at,idempotency,fingerprint,actor_hash)
- values(w.id,w.unit_id,d1,d2,g,t+interval '15 minutes',p_idempotency,p_fingerprint,p_actor) returning * into r;
+ values(w.id,w.unit_id,d1,d2,g,t+interval '15 minutes',p_idempotency,server_fingerprint,p_actor) returning * into r;
  insert into widget_private.contacts(request_id,name,phone,comment,policy_url,config_version) values(r.id,trim(p_payload->>'name'),p_payload->>'phone',p_payload->>'comment',w.published->>'policyUrl',w.published_version);
  if not exists(select 1 from widget_private.inventory_blocks(w.unit_id,d1,d2)) then
  insert into widget_private.holds(request_id,status,accepted_at,expires_at) values(r.id,'active',t,t+interval '15 minutes') returning * into h;
@@ -89,4 +90,7 @@ create trigger booking_allocation_guard before insert or update on public.invent
 create trigger booking_block_release after update of released_at on public.unit_blocks for each row execute function widget_private.release_block();
 create or replace function widget_private.ledger_ready() returns boolean language sql set search_path='' as $$select true$$;
 revoke all on all functions in schema widget_private from public,anon,authenticated;
+alter function public.booking_submit(text,jsonb,uuid,text,text) set lock_timeout='2s';
+alter function public.booking_expire_holds() set lock_timeout='2s';
+alter function widget_private.allocation_guard() set lock_timeout='2s';
 commit;

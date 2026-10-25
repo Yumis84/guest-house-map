@@ -68,8 +68,11 @@ declare r widget_private.requests;w public.widget_configs;h widget_private.holds
 begin
  if not widget_private.ledger_ready() then raise exception 'not_ready' using errcode='P0001';end if;
  if p_key is null or p_action not in ('confirm','decline','cancel') or p_action is null then raise exception 'invalid_payload' using errcode='22023';end if;
- perform pg_catalog.pg_advisory_xact_lock(739251,1);perform widget_private.expire_locked();
  select * into r from widget_private.requests where id=p_id;
+ if not found then raise exception 'not_found' using errcode='P0001';end if;
+ select * into w from public.widget_configs where id=r.widget_id;perform widget_private.booking_assert_owner(w.property_id);
+ if not public.widget_v2_rate_limit('transition:'||auth.uid(),120,60) then raise exception 'rate_limited' using errcode='P0001';end if;
+ perform pg_catalog.pg_advisory_xact_lock(739251,1);perform widget_private.expire_locked();
  perform widget_private.lock_unit_resources(r.unit_id);
  select * into r from widget_private.requests where id=p_id for update;if not found then raise exception 'not_found' using errcode='P0001';end if;
  perform widget_private.lock_unit_resources(r.unit_id);
@@ -161,8 +164,9 @@ end $$;
 create function public.booking_owner_release_block(p_id uuid) returns void language plpgsql security definer set search_path='' as $$
 declare prop uuid;
 begin
+ select u.property_id into prop from public.unit_blocks b join public.physical_units u on u.id=b.unit_id where b.id=p_id;perform widget_private.booking_assert_owner(prop);
+ if not public.widget_v2_rate_limit('block-release:'||auth.uid(),120,60) then raise exception 'rate_limited' using errcode='P0001';end if;
  perform pg_catalog.pg_advisory_xact_lock(739251,1);
- select u.property_id into prop from public.unit_blocks b join public.physical_units u on u.id=b.unit_id where b.id=p_id for update of b;perform widget_private.booking_assert_owner(prop);
  update public.unit_blocks set released_at=clock_timestamp() where id=p_id and released_at is null;
  if found then insert into widget_private.history(block_id,actor,action) values(p_id,auth.uid(),'block_released');end if;
 end $$;
@@ -192,4 +196,7 @@ revoke all on all functions in schema widget_private from public,anon,authentica
 revoke all on function public.booking_submit(text,jsonb,uuid,text,text),public.booking_expire_holds(),public.booking_cleanup_limits(),public.booking_owner_transition(uuid,text,integer,uuid),public.booking_owner_list(uuid,text,jsonb,integer,text),public.booking_owner_detail(uuid),public.booking_owner_contacts(uuid),public.booking_owner_capabilities(),public.booking_owner_calendar(uuid,text),public.booking_owner_release_block(uuid) from public,anon,authenticated;
 grant execute on function public.booking_submit(text,jsonb,uuid,text,text),public.booking_expire_holds(),public.booking_cleanup_limits() to service_role;
 grant execute on function public.booking_owner_transition(uuid,text,integer,uuid),public.booking_owner_list(uuid,text,jsonb,integer,text),public.booking_owner_detail(uuid),public.booking_owner_contacts(uuid),public.booking_owner_capabilities(),public.booking_owner_calendar(uuid,text),public.booking_owner_release_block(uuid) to authenticated;
+alter function public.booking_owner_transition(uuid,text,integer,uuid) set lock_timeout='2s';
+alter function public.booking_owner_release_block(uuid) set lock_timeout='2s';
+alter function widget_private.lock_unit_resources(uuid) set lock_timeout='2s';
 commit;

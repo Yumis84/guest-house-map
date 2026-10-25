@@ -44,6 +44,7 @@ export async function handleWidgetRequest(request,deps){
   return reply(202,null,{accepted:true,requestId:result.requestId});
  }catch(error){
   // Never echo DB messages, stack traces, payloads, telephone or CAPTCHA tokens.
+  if(error?.code==='55P03'||error?.code==='57014')return reply(503,'temporarily_busy');
   if(error?.code==='22023')return reply(400,'invalid_payload');
   if(error?.code==='54000')return reply(429,'hold_limit');
   if(error?.code==='23P01')return reply(409,'dates_unavailable');

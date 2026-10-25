@@ -1,16 +1,12 @@
 import assert from "node:assert/strict";
+import {safeTestDatabaseUrl} from "./safe-test-db-url.mjs";
 import { spawn } from "node:child_process";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
 const require = createRequire(process.env.PG_MODULE_ROOT || import.meta.url),
   { Client } = require("pg");
 const uri = process.env.BOOKING_TEST_DATABASE_URL;
-if (
-  !uri ||
-  !["127.0.0.1", "localhost"].includes(new URL(uri).hostname) ||
-  !new URL(uri).pathname.startsWith("/synthetic_booking_")
-)
-  throw Error("Explicit loopback synthetic_booking_* database required");
+safeTestDatabaseUrl(uri);
 const connect = async () => {
   const c = new Client({ connectionString: uri });
   await c.connect();
@@ -100,6 +96,8 @@ async function age(id) {
   );
 }
 try {
+  const existing = await db.query("select n.nspname, c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p','v','m','f') and n.nspname not in ('pg_catalog','information_schema') and n.nspname not like 'pg_toast%' and n.nspname not like 'pg_temp%' limit 1");
+  assert.equal(existing.rowCount,0,"Refusing destructive acceptance test: database is not empty");
   await db.query(
     await readFile(new URL("./baseline.sql", import.meta.url), "utf8"),
   );
@@ -168,7 +166,14 @@ try {
     "insert into widget_private.activation values($1,true,8,15,true)",
     [u],
   );
-  await test("native PostgreSQL + btree_gist, baseline inventory trigger bodies loaded", async () => {
+  if (!process.env.BOOKING_M1_ONLY) {
+    await test('widget HTTP handler -> native PG17 M2 RPC and idempotent retry', async () => {
+      const child=spawn(process.execPath,['tests/booking/widget-handler-postgres.integration.mjs'],{cwd:process.cwd(),env:process.env,stdio:'inherit'});
+      const exitCode=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('exit',resolve);});
+      assert.equal(exitCode,0,'Widget-to-PostgreSQL integration failed');
+      await clear();
+    });
+  }  await test("native PostgreSQL + btree_gist, baseline inventory trigger bodies loaded", async () => {
     assert.match(await scalar(db, "select version()"), /PostgreSQL/);
     assert.equal(
       await scalar(
@@ -275,6 +280,9 @@ try {
         transition(y, b.requestId, "confirm"),
       ]);
       assert.equal(outcomes.filter((x) => x.status === "fulfilled").length, 1);
+      await db.query("reset role");
+      assert.equal(await scalar(db, "select count(*)::int from reservations where status='confirmed'"), 1);
+      assert.equal(await scalar(db, "select count(*)::int from widget_private.requests where status='pending'"), 1);
       assert.equal(
         outcomes.find((x) => x.status === "rejected").reason.code,
         "23P01",
@@ -411,6 +419,19 @@ try {
     );
     await submit(db, 40);
     await assert.rejects(submit(db, 50), (e) => e.code === "54000");
+  });
+  await clear();
+  await test("audit P1: server-derived fingerprint, authorization before lock, bounded owner wait",async()=>{
+    const key=crypto.randomUUID(),request=await submit(db,60,widget.public_id,key);
+    await assert.rejects(submit(db,61,widget.public_id,key),e=>e.code==='23505'&&e.message==='idempotency_conflict');
+    const holder=await connect(),stranger=await connect();
+    try{
+      await holder.query('begin');await holder.query('select pg_advisory_xact_lock(739251,1)');await identity(stranger,other);
+      await stranger.query("set statement_timeout='500ms'");
+      await assert.rejects(stranger.query('select booking_owner_transition($1,$2,1,$3)',[request.requestId,'confirm',crypto.randomUUID()]),e=>e.code==='P0001'&&e.message==='not_found');
+      await identity(db);const start=performance.now();
+      await assert.rejects(db.query('select booking_owner_transition($1,$2,1,$3)',[request.requestId,'confirm',crypto.randomUUID()]),e=>e.code==='55P03');assert.ok(performance.now()-start<3500);
+    }finally{await holder.query('rollback');await holder.end();await stranger.end();}
   });
   await clear();
   await test("150+ cursor paging + list masking + owner detail/contact authorization", async () => {
