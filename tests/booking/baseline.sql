@@ -1,0 +1,18 @@
+create extension btree_gist;
+do $$begin if not exists(select 1 from pg_roles where rolname='anon') then create role anon;create role authenticated;create role service_role;end if;end$$;
+create schema auth;
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+grant usage on schema auth to public;grant execute on function auth.uid() to public;
+create table properties(id uuid primary key,company_id uuid,published boolean,name text);
+create table company_members(company_id uuid,user_id uuid,member_role text);
+create table physical_units(id uuid primary key,property_id uuid references properties(id),active boolean,unit_code text);
+create table inventory_resources(id uuid primary key,property_id uuid);
+create table unit_resource_requirements(unit_id uuid references physical_units(id),resource_id uuid references inventory_resources(id),property_id uuid,primary key(unit_id,resource_id));
+create table reservations(id uuid primary key default gen_random_uuid(),unit_id uuid references physical_units(id),checkin date,checkout date,status text check(status in ('pending','confirmed','cancelled','expired')),idempotency_key text unique,created_at timestamptz default now(),check(checkout>checkin),exclude using gist(unit_id with =,daterange(checkin,checkout,'[)') with &&) where(status in ('pending','confirmed')));
+create table unit_blocks(id uuid primary key default gen_random_uuid(),unit_id uuid references physical_units(id),starts_on date,ends_on date,reason text,check(ends_on>starts_on));
+create table inventory_allocations(id uuid primary key default gen_random_uuid(),resource_id uuid references inventory_resources(id),starts_at timestamptz,ends_at timestamptz,allocation_kind text,external_ref text,unit_id uuid references physical_units(id),reservation_id uuid references reservations(id),block_id uuid references unit_blocks(id),check(ends_at>starts_at),exclude using gist(resource_id with =,tstzrange(starts_at,ends_at,'[)') with &&));
+alter table properties enable row level security;alter table company_members enable row level security;alter table physical_units enable row level security;
+create policy owner_read on properties for select to authenticated using(exists(select 1 from company_members m where m.company_id=properties.company_id and m.user_id=auth.uid()));
+create policy own_members on company_members for select to authenticated using(user_id=auth.uid());
+create policy owner_units on physical_units for select to authenticated using(exists(select 1 from properties p where p.id=physical_units.property_id));
+grant select on properties,company_members,physical_units to authenticated;
