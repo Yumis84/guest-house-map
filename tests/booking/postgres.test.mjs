@@ -389,6 +389,12 @@ try {
     }
   });
   await clear();
+ await test('missing-allocation drift still detects sibling reservation via resource fallback',async()=>{await db.query('reset role');await db.query('alter table reservations disable trigger sync_reservation_inventory_trigger');try{await db.query("insert into reservations(unit_id,checkin,checkout,status) values($1,$2,$3,'confirmed')",[u2,day(30),day(32)]);}finally{await db.query('alter table reservations enable trigger sync_reservation_inventory_trigger');}const r=await submit(db);await db.query('reset role');assert.equal(await scalar(db,'select count(*)::int from widget_private.holds'),0);await assert.rejects(transition(db,r.requestId,'confirm'),e=>e.message==='dates_unavailable');});
+ await clear();
+  await test('five simultaneous confirms with one key create one reservation',async()=>{const r=await submit(db);const sessions=await Promise.all(Array.from({length:5},connect)),key=crypto.randomUUID();try{const answers=await Promise.all(sessions.map(c=>transition(c,r.requestId,'confirm',1,key)));assert.ok(answers.every(a=>a.status==='confirmed'));await db.query('reset role');assert.equal(await scalar(db,'select count(*)::int from reservations'),1);await assert.rejects(transition(db,r.requestId,'confirm',2,key),e=>e.message==='idempotency_conflict');}finally{await Promise.all(sessions.map(c=>c.end()));}});
+ await clear();
+ await test('deterministic resource locks avoid reversed unit deadlock',async()=>{const x=await connect(),y=await connect();try{const work=async(c,first,second)=>{await c.query('begin');try{await c.query('set local statement_timeout=5000');await c.query('select widget_private.lock_unit_resources($1)',[first]);await c.query('select pg_sleep(0.05)');await c.query('select widget_private.lock_unit_resources($1)',[second]);await c.query('commit');}catch(e){await c.query('rollback');throw e;}};await Promise.all([work(x,u,u2),work(y,u2,u)]);}finally{await x.end();await y.end();}});
+ await clear();
   await test("idempotent submit, normalized invalid payload errors, quota", async () => {
     const key = crypto.randomUUID(),
       a = await submit(db, 30, widget.public_id, key);
@@ -516,6 +522,8 @@ try {
       155,
     );
   });
+ await test('10k requests pagination uses dedicated index',async()=>{await db.query('reset role');await db.query("insert into widget_private.requests(widget_id,unit_id,checkin,checkout,guests,expires_at,idempotency,fingerprint) select $1,$2,current_date+90,current_date+91,1,now(),gen_random_uuid(),'synthetic' from generate_series(1,10000)",[widget.id,u]);await db.query('analyze widget_private.requests');const plan=(await db.query("explain select id from widget_private.requests where widget_id=$1 and status='pending' order by created_at desc,id desc limit 50",[widget.id])).rows.map(r=>r['QUERY PLAN']).join('\n');assert.match(plan,/Index/);await identity(db);const t=performance.now(),page=await scalar(db,'select booking_owner_list($1,$2,null,50,$3)',[p,'pending','']);assert.equal(page.rows.length,50);assert.ok(page.next_cursor);assert.equal(page.counts.pending,10155);console.log('10k page ms',Math.round(performance.now()-t),'plan',plan);});
+ await test('fail-closed disable preserves requests and reservations',async()=>{await db.query('reset role');const before=await scalar(db,'select count(*)::int from widget_private.requests');await db.query(await readFile(new URL('../../sql/booking-disable.CANDIDATE.sql',import.meta.url),'utf8'));await identity(db);assert.equal((await scalar(db,'select booking_owner_capabilities()')).lifecycle,false);await db.query('reset role');assert.equal(await scalar(db,'select count(*)::int from widget_private.requests'),before);await db.query('set role service_role');await assert.rejects(db.query('select booking_submit($1,$2,$3,$4,$5)',[widget.public_id,{},crypto.randomUUID(),'a'.repeat(64),'b'.repeat(64)]),e=>e.code==='42501');});
   }
   await mkdir(new URL("../../test-results/", import.meta.url), {
     recursive: true,
