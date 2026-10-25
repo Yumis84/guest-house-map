@@ -2,6 +2,12 @@
   "name": "guest-house-map-validation",
   "private": true,
   "type": "module",
-  "scripts": { "test:widget-sql": "node widget-v2.sql.test.mjs", "test:widget-edge": "node widget-v2.edge.test.mjs" },
-  "devDependencies": { "@electric-sql/pglite": "0.3.14" }
+  "scripts": {
+    "test:widget-sql": "node widget-v2.sql.test.mjs",
+    "test:widget-edge": "node widget-v2.edge.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
+    "pg": "8.23.1"
+  }
 }

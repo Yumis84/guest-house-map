@@ -6,7 +6,7 @@ export function normalizePayload(body,today){
  const validDate=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;
  if(!validDate(body.checkin)||!validDate(body.checkout))throw Error('invalid_dates');
  const nights=(Date.parse(body.checkout)-Date.parse(body.checkin))/86400000;
- if(body.checkin<today||nights<1||nights>90||(Date.parse(body.checkin)-Date.parse(today))/86400000>730)throw Error('invalid_dates');
+ if(body.checkin<today||nights<1||nights>30||(Date.parse(body.checkin)-Date.parse(today))/86400000>365)throw Error('invalid_dates');
  if(!Number.isInteger(body.guests)||body.guests<1||body.guests>100||typeof body.name!=='string'||body.name.trim().length<1||body.name.trim().length>120||typeof body.phone!=='string'||body.phone.length>40||typeof body.comment!=='string'||body.comment.length>1000||body.consent!==true)throw Error('invalid_payload');
  const phone=body.phone.replace(/[\s()-]/g,'');if(!/^\+[1-9][0-9]{6,14}$/.test(phone))throw Error('invalid_phone');
  return {checkin:body.checkin,checkout:body.checkout,guests:body.guests,name:body.name.trim(),phone,comment:body.comment.trim(),consent:true};
@@ -34,16 +34,18 @@ export async function handleWidgetRequest(request,deps){
   if(!await deps.rateLimit(await deps.hash('ip:'+ip),30,3600))return reply(429,'rate_limited');
   let body;try{body=await readJson(request);}catch(e){return reply(e.message==='body_too_large'?413:e.message==='unsupported_media_type'?415:400,'invalid_payload');}
   let payload;try{payload=normalizePayload(body,deps.today());}catch{return reply(400,'invalid_payload');}
+  if(!await deps.verifyCaptcha(body.captchaToken,ip,body.widgetId))return reply(403,'captcha_failed');
   for(const [key,limit,seconds] of [[`widget-ip:${body.widgetId}:${ip}`,5,900],[`widget:${body.widgetId}`,200,900],[`phone:${payload.phone}`,5,3600]]){
    if(!await deps.rateLimit(await deps.hash(key),limit,seconds))return reply(429,'rate_limited');
   }
-  if(!await deps.verifyCaptcha(body.captchaToken,ip,body.widgetId))return reply(403,'captcha_failed');
   const fingerprint=await deps.hash('payload:'+JSON.stringify(payload));
-  const result=await deps.submit(body.widgetId,payload,body.idempotency,fingerprint);
+  const result=await deps.submit(body.widgetId,payload,body.idempotency,fingerprint,await deps.hash('actor:'+ip));
   if(result?.accepted!==true||!UUID.test(result.requestId||''))return reply(503,'booking_unavailable');
   return reply(202,null,{accepted:true,requestId:result.requestId});
  }catch(error){
   // Never echo DB messages, stack traces, payloads, telephone or CAPTCHA tokens.
+  if(error?.code==='22023')return reply(400,'invalid_payload');
+  if(error?.code==='54000')return reply(429,'hold_limit');
   if(error?.code==='23P01')return reply(409,'dates_unavailable');
   if(error?.code==='23505')return reply(409,'idempotency_conflict');
   return reply(503,'booking_unavailable');
