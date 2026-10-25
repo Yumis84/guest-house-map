@@ -1,0 +1,17 @@
+name: Booking owner M0b checks
+on:
+  push:
+    branches: [fix/owner-booking-m0b]
+  pull_request:
+    paths: ['booking-owner.js', 'booking-calendar.js', 'tests/booking-*.test.mjs', '.github/workflows/booking-owner-m0b.yml']
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/booking-calendar.test.mjs tests/booking-owner.static.test.mjs
