@@ -1,26 +1,15 @@
-# M2: shared occupancy and n8n / Sheets cutover — NOT EXECUTED
+# Supabase-first pilot transition — NOT EXECUTED
 
-Supabase is approved as authority. The candidate extends existing resource allocations and reuses actual inventory trigger function bodies captured read-only, not a second ledger. Private holds are separate because request lifetime differs from hold lifetime. Existing request/contact store is extended, not duplicated. Expiry changes holds only; reservations are retained on cancellation.
+Owner decision 49017584 (2026-10-25) supersedes the earlier Sheets cutover plan. Supabase is the sole authority; Google Sheets is excluded from the new booking architecture. n8n is for post-commit notifications/automation only. Do not change an active workflow before verifying its purpose.
 
-## Before any cutover
+1. Freeze the reviewed candidate versions. Run the isolated PG17/PostgREST/browser acceptance and independent review. Inspect all callers of `submit_stepan_booking`, reservation/block writers and direct ledger writers for house_001 / STEPAN-HOUSE, using metadata and counts without guest contacts. The legacy RPC currently creates requests only; it is not the 15-minute hold path.
+2. Obtain explicit owner authorization for production migration, scheduler, gateway, endpoint routing and rollback window. No deployment is authorized by this document. Use the existing Supabase project ojifyifewlwzkysgxogo, no new production project.
+3. Before SQL changes, pause new candidate submissions using runtime activation/gateway flags in the approved window. Preserve the existing site and data. Do not apply M1's revocations while an old V2 caller still depends on them. Rehearse the exact order on an isolated copy including roles, grants and PostgREST schema reload; empty synthetic tests alone are insufficient for a live upgrade.
+4. Apply reviewed candidates only after separate approval. Deploy the reviewed server-only gateway/Edge and scheduled expiry/cleanup with actual trusted IP provenance and Turnstile hostname/action/widget binding. Validate with approved synthetic test identities. No service key may reach browser config.
+5. Switch only the approved Stepana form and owner route together. All confirmation/manual-block writers must use the same atomic resource ledger. n8n notifications run after commit, must be idempotent, and may never establish availability. Keep other properties disabled until inventory verification.
+6. Verify exact15-minute expiry, retained pending request, late-confirm recheck, cancel, manual block, owner isolation and disable on the approved target. Reconcile existing manual blocks/reservations and all discovered writer routes. Do not interpret request rows as reservations.
+7. On failure: disable new submissions and activation first. Keep committed requests/reservations/history. `booking-disable.CANDIDATE.sql` is a fail-closed stop, not a destructive uninstall or an instruction to restore unsafe write grants. Reconcile committed ledger state before any approved routing rollback; do not blindly restore an old independent confirmation writer.
 
-1. Read-only export of Sheets bookings and any Google Calendar feeds must be separately scoped with owner permission for real data. No actual rows used in this implementation.
-2. Map house_id → property → physical unit → resource set; ambiguities and duplicate source IDs are blocking. Each external booking needs stable (channel, external_id), revision and idempotency key. Time intervals use checkout-exclusive dates; baseline resource allocation dates are normalized at UTC midnight to match existing trigger bodies.
-3. Reconcile confirmed bookings and manual blocks into a proposed import manifest. Detect overlaps, conflicting revisions, missing units; owner resolves each. Test manifest uses synthetic data only.
-4. Prepare a new disabled n8n candidate: submit/confirm through shared server transaction FIRST; only after commit mirror row to Sheets and enqueue notification. Sheets becomes projection; Sheets append or notification success must never create a confirmed reservation by itself. Retry uses same source id; do not blindly retry with new booking id.
-5. Separate approval of a maintenance window and switching all writers is mandatory. A dual active writable Sheets/Supabase window is not safe. Shadow read/compare is permissible only as separately approved real-data work. Existing n8n workflow remains byte-for-byte unchanged until approval.
-6. Enable V2 only after all writers pass shared-resource races and reconciliation. Until then public runtime/activation stay off and calendars say sources incomplete.
+The conservative global advisory gate remains a one-property pilot tradeoff; entry points have a two-second lock timeout. New ledger writers must use the resource protocol and checkout-exclusive ranges. Existing trigger timestamps use UTC-midnight allocation ranges; the request calendar validates Kaliningrad local dates. Native PG17 tests cover both, hosted exact-schema rehearsal remains pending.
 
-## Transaction protocol
-
-Conservative global booking advisory transaction lock serializes ledger mutations; exclusion constraints are the independent final barrier, including whole-house vs room allocations. Guard trigger on ledger inserts/updates expires old holds before a new reservation/block allocation. Request confirmation removes only its own hold, rechecks all relevant resources, creates reservation (existing inventory trigger allocates it), changes request and appends history atomically. On conflict the transaction rolls back; pending request survives. A confirmed reservation is soft-cancelled; manual block is soft-released and audited.
-
-A maintenance runner (`scripts/booking-maintenance.mjs --watch`) expires holds and deletes expired limiter buckets periodically in the isolated environment. At/after expires_at availability excludes hold even before the worker tick. New writers lazily clean expired allocations under the same transaction lock. Expired holds cannot be revived via public RPC. Production requires a separately reviewed scheduler/service-role deployment; none is installed here.
-
-## Rollback
-
-Disable V2 submissions/activation first. Keep request, hold, reservation and history rows. Do not drop tables, release confirmed reservations or restore unauthenticated write grants. Reconcile committed Supabase reservations before any separately approved return to the old writer. A failure after DB commit must be retried idempotently or recovered from outbox, not compensated by deleting a reservation.
-
-## Open blockers
-
-Real external writer not integrated; real reconciliation not performed. No production scheduler, Turnstile/gateway deployment or notifications/outbox delivery. Local PostgreSQL is 18.4; actual Supabase baseline is 17.11, so a PG17/Supabase staging acceptance remains required. Global locking is deliberate for initial correctness and requires load review before scaling.
+Current release gates: independent exact-head M3 review; hosted GoTrue/Edge/Turnstile/trusted proxy acceptance; complete Stepana writer inventory; scheduled worker and notifications; separately approved personal-data retention/deletion and explicit pilot/cutover authorization. No Google Sheets prerequisite.

@@ -1,0 +1,62 @@
+name: Booking M3 isolated acceptance
+on:
+  pull_request:
+    paths: ['booking-owner.*', 'booking-calendar.js', 'widget/v2*', 'server/widget-request/**', 'sql/booking-m3-*.sql', 'tests/booking/**', '.github/workflows/booking-m3-isolated.yml']
+permissions:
+  contents: read
+jobs:
+  postgrest-browser:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: bookingtest
+          POSTGRES_PASSWORD: synthetic-only
+          POSTGRES_DB: synthetic_booking_m3_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      BOOKING_TEST_DATABASE_URL: postgresql://bookingtest:synthetic-only@127.0.0.1:5432/synthetic_booking_m3_ci
+      POSTGREST_BIN: /tmp/m3-postgrest/postgrest
+      M3_TLS_KEY: /tmp/m3-local.key
+      M3_TLS_CERT: /tmp/m3-local.crt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+          mkdir /tmp/m3-postgrest
+          curl -fLsS https://github.com/PostgREST/postgrest/releases/download/v16.5/postgrest-v16.5-linux-static-x86-64.tar.xz | tar -xJ -C /tmp/m3-postgrest
+          openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/m3-local.key -out /tmp/m3-local.crt -days 1 -subj /CN=127.0.0.1 -addext 'subjectAltName=IP:127.0.0.1,DNS:localhost'
+      - name: Syntax, CAPTCHA and guards
+        run: |
+          node --experimental-strip-types --check server/widget-request/index.ts
+          node --test tests/booking/captcha.test.mjs tests/booking/safe-test-db-url.test.mjs tests/booking/postgres-preflight-guards.test.mjs
+          node widget-v2.edge.test.mjs
+          node widget-v2.core.test.mjs
+      - name: Manual block and calendar SQL acceptance
+        run: |
+          node -e "const{Client}=require('pg');(async()=>{const c=new Client({connectionString:process.env.BOOKING_TEST_DATABASE_URL});await c.connect();await c.query('create database synthetic_booking_m3_sql_ci');await c.end();})();"
+          BOOKING_TEST_DATABASE_URL=postgresql://bookingtest:synthetic-only@127.0.0.1:5432/synthetic_booking_m3_sql_ci node tests/booking/stand/sql-acceptance.mjs
+      - name: Real PostgREST and browser acceptance
+        run: |
+          node tests/booking/stand/server.mjs > /tmp/m3-stand.log 2>&1 &
+          stand_pid=$!
+          trap 'kill "$stand_pid" || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl -fksS https://127.0.0.1:55440/synthetic-meta > /dev/null; then break; fi
+            if ! kill -0 "$stand_pid" 2>/dev/null; then cat /tmp/m3-stand.log; exit 1; fi
+            sleep 1
+          done
+          node tests/booking/stand/browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: m3-synthetic-browser-evidence
+          path: test-results/m3/
