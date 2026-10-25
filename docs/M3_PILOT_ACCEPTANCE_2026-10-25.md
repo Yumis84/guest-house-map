@@ -34,7 +34,7 @@ Expiration tests move synthetic timestamps across the900-second boundary; they d
 
 ## Pilot inventory verified read-only
 
-`house_001 / STEPAN-HOUSE`: active, exactly1 required resource;3 manual blocks,3 matching block allocations, matching date boundaries. No guest contacts/booking payloads read. Existing live `submit_stepan_booking` is request-only; new M1/M2 RPCs are not deployed. Other houses remain outside pilot.
+`house_001 / STEPAN-HOUSE`: active, exactly1 required resource;3 manual blocks,3 matching block allocations, matching date boundaries. No guest contacts/booking payloads read. Existing live `submit_stepan_booking` is request-only; new M1/M2 RPCs are not deployed. Other houses remain outside pilot. See M3_STEPAN_WRITERS_READONLY_2026-10-25.md: legacy owner UI still directly INSERTs/DELETEs unit_blocks and reads the old booking_requests store. Candidate does not migrate or hide those rows; coexistence/unified visibility and the soft-delete transition remain cutover gates.
 
 ## Reproduce (empty loopback database only)
 
