@@ -13,9 +13,10 @@ grant execute on function public.booking_pilot_enabled(uuid) to authenticated,se
 -- SECURITY INVOKER is intentional: direct API role is visible; a reviewed
 -- SECURITY DEFINER booking RPC runs as its owner and may perform the write.
 create function widget_private.guard_pilot_dml() returns trigger language plpgsql security invoker set search_path='' as $$
-declare unit uuid;begin
- if tg_op='DELETE' then unit=old.unit_id;else unit=new.unit_id;end if;
- if current_user in('anon','authenticated','service_role') and public.booking_pilot_enabled(unit) then raise exception 'use_booking_rpc' using errcode='42501';end if;
+declare old_unit uuid;new_unit uuid;begin
+ if tg_op in('UPDATE','DELETE') then old_unit=old.unit_id;end if;
+ if tg_op in('UPDATE','INSERT') then new_unit=new.unit_id;end if;
+ if current_user in('anon','authenticated','service_role') and ((old_unit is not null and public.booking_pilot_enabled(old_unit)) or (new_unit is not null and public.booking_pilot_enabled(new_unit))) then raise exception 'use_booking_rpc' using errcode='42501';end if;
  if tg_op='DELETE' then return old;else return new;end if;
 end $$;
 revoke all on function widget_private.guard_pilot_dml() from public,anon,authenticated;
