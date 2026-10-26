@@ -64,7 +64,7 @@ jobs:
             -e GOTRUE_API_HOST=127.0.0.1 -e GOTRUE_API_PORT=9999 \
             -e API_EXTERNAL_URL=http://127.0.0.1:9999 \
             -e GOTRUE_DB_DRIVER=postgres -e GOTRUE_DB_NAMESPACE=auth \
-            -e GOTRUE_DB_DATABASE_URL="$BOOKING_TEST_DATABASE_URL" \
+            -e GOTRUE_DB_DATABASE_URL="${BOOKING_TEST_DATABASE_URL}?options=-csearch_path%3Dauth" \
             -e GOTRUE_SITE_URL=http://127.0.0.1:55444 \
             -e GOTRUE_JWT_SECRET="$M4_AUTH_JWT_SECRET" \
             -e GOTRUE_JWT_ADMIN_ROLES=service_role -e GOTRUE_JWT_AUD=authenticated \

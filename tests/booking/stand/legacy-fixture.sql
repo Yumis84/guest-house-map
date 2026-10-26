@@ -6,6 +6,7 @@ alter table public.booking_requests enable row level security;alter table public
 revoke all on public.booking_guest_contacts from public,anon,authenticated;
 alter table public.unit_blocks enable row level security;
 grant select,insert,delete on public.unit_blocks to authenticated,service_role;
+grant update on public.unit_blocks to service_role;
 alter role service_role bypassrls;
 create policy synthetic_owner_blocks on public.unit_blocks for all to authenticated using(exists(select 1 from public.physical_units u where u.id=unit_id)) with check(exists(select 1 from public.physical_units u where u.id=unit_id));
 create function public.submit_stepan_booking(p_checkin date,p_checkout date,p_guests integer,p_name text,p_phone text,p_email text,p_comment text) returns uuid language plpgsql security definer set search_path='' as $$
