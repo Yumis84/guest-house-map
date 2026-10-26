@@ -78,9 +78,9 @@ begin
  if p_key is null or p_action is null or p_action not in('confirm','decline','cancel') then raise exception 'invalid_payload' using errcode='22023';end if;
  if not public.widget_v2_rate_limit('transition:'||auth.uid(),120,60) then raise exception 'rate_limited' using errcode='P0001';end if;
  perform pg_catalog.pg_advisory_xact_lock(739251,1);perform widget_private.lock_unit_resources(r.unit_id);perform widget_private.expire_locked();
- select * into r from public.booking_requests where id=p_id for update;
+ select * into r from public.booking_requests where id=p_id for update;perform widget_private.booking_assert_owner(r.property_id);
  select * into op from widget_private.legacy_operations where key=p_key;
- if found then if op.request_id<>p_id or op.revision<>p_revision or op.action<>p_action then raise exception 'idempotency_conflict' using errcode='23505';end if;return op.result;end if;
+ if found then if op.request_id<>p_id or op.revision is distinct from p_revision or op.action<>p_action then raise exception 'idempotency_conflict' using errcode='23505';end if;return op.result;end if;
  if r.revision is distinct from p_revision then raise exception 'revision_conflict' using errcode='40001';end if;
  if (p_action in('confirm','decline') and r.status not in('new','reviewing')) or(p_action='cancel' and r.status<>'accepted') then raise exception 'invalid_transition' using errcode='22023';end if;
  if p_action='confirm' then
