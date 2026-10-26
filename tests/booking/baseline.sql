@@ -1,7 +1,7 @@
 create extension btree_gist;
 do $$begin if not exists(select 1 from pg_roles where rolname='anon') then create role anon;create role authenticated;create role service_role;end if;end$$;
-create schema auth;
-create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+create schema if not exists auth;
+create or replace function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 grant usage on schema auth to public;grant execute on function auth.uid() to public;
 create table properties(id uuid primary key,company_id uuid,published boolean,name text);
 create table company_members(company_id uuid,user_id uuid,member_role text);
