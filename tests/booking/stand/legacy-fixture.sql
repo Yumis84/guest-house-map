@@ -4,10 +4,14 @@ create table public.booking_requests(id uuid primary key default gen_random_uuid
 create table public.booking_guest_contacts(request_id uuid primary key references public.booking_requests(id) on delete cascade,guest_name text not null,phone text not null,email text,guest_comment text,created_at timestamptz not null default clock_timestamp());
 alter table public.booking_requests enable row level security;alter table public.booking_guest_contacts enable row level security;
 revoke all on public.booking_guest_contacts from public,anon,authenticated;
+grant select on public.booking_requests,public.booking_guest_contacts to authenticated;
+create policy synthetic_legacy_owner_read on public.booking_requests for select to authenticated using(exists(select 1 from public.properties p join public.company_members m on m.company_id=p.company_id where p.id=property_id and m.user_id=auth.uid()));
+create policy booking_contacts_owner_read on public.booking_guest_contacts for select to authenticated using(exists(select 1 from public.booking_requests br join public.properties p on p.id=br.property_id join public.company_members m on m.company_id=p.company_id where br.id=request_id and m.user_id=auth.uid()));
 alter table public.unit_blocks enable row level security;
 grant select,insert,delete on public.unit_blocks to authenticated,service_role;
 grant update on public.unit_blocks to service_role;
 alter role service_role bypassrls;
+grant select,insert,update,delete on public.inventory_allocations to service_role;
 create policy synthetic_owner_blocks on public.unit_blocks for all to authenticated using(exists(select 1 from public.physical_units u where u.id=unit_id)) with check(exists(select 1 from public.physical_units u where u.id=unit_id));
 create function public.submit_stepan_booking(p_checkin date,p_checkout date,p_guests integer,p_name text,p_phone text,p_email text,p_comment text) returns uuid language plpgsql security definer set search_path='' as $$
 declare rid uuid;begin

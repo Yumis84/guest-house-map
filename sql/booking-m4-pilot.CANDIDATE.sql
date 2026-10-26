@@ -10,17 +10,29 @@ declare prop uuid;begin
 end $$;
 revoke all on function public.booking_pilot_enabled(uuid) from public,anon,authenticated;
 grant execute on function public.booking_pilot_enabled(uuid) to authenticated,service_role;
+create function public.booking_resource_pilot_enabled(p_resource uuid) returns boolean language plpgsql security definer set search_path='' as $$
+declare prop uuid;begin
+ select property_id into prop from public.inventory_resources where id=p_resource;if current_setting('role',true)<>'service_role' then perform widget_private.booking_assert_owner(prop);end if;
+ return exists(select 1 from widget_private.pilots where property_id=prop and state in('active','paused'));
+end $$;
+revoke all on function public.booking_resource_pilot_enabled(uuid) from public,anon,authenticated;
+grant execute on function public.booking_resource_pilot_enabled(uuid) to authenticated,service_role;
 -- SECURITY INVOKER is intentional: direct API role is visible; a reviewed
 -- SECURITY DEFINER booking RPC runs as its owner and may perform the write.
 create function widget_private.guard_pilot_dml() returns trigger language plpgsql security invoker set search_path='' as $$
 declare old_unit uuid;new_unit uuid;begin
  if tg_op in('UPDATE','DELETE') then old_unit=old.unit_id;end if;
  if tg_op in('UPDATE','INSERT') then new_unit=new.unit_id;end if;
+ if current_user in('anon','authenticated','service_role') and tg_table_name='inventory_allocations' then
+  if tg_op in('UPDATE','DELETE') then if public.booking_resource_pilot_enabled(old.resource_id) then raise exception 'use_booking_rpc' using errcode='42501';end if;end if;
+  if tg_op in('UPDATE','INSERT') then if public.booking_resource_pilot_enabled(new.resource_id) then raise exception 'use_booking_rpc' using errcode='42501';end if;end if;
+ end if;
  if current_user in('anon','authenticated','service_role') and ((old_unit is not null and public.booking_pilot_enabled(old_unit)) or (new_unit is not null and public.booking_pilot_enabled(new_unit))) then raise exception 'use_booking_rpc' using errcode='42501';end if;
  if tg_op='DELETE' then return old;else return new;end if;
 end $$;
 revoke all on function widget_private.guard_pilot_dml() from public,anon,authenticated;
 create trigger booking_m4_block_guard before insert or update or delete on public.unit_blocks for each row execute function widget_private.guard_pilot_dml();
+create trigger booking_m4_allocation_guard before insert or update or delete on public.inventory_allocations for each row execute function widget_private.guard_pilot_dml();
 create trigger booking_m4_reservation_guard before insert or update or delete on public.reservations for each row execute function widget_private.guard_pilot_dml();
 create trigger booking_m4_legacy_guard before update or delete on public.booking_requests for each row execute function widget_private.guard_pilot_dml();
 alter function public.submit_stepan_booking(date,date,integer,text,text,text,text) rename to booking_legacy_submit_original;
@@ -31,7 +43,7 @@ begin
  return widget_private.booking_legacy_submit_original(p_checkin,p_checkout,p_guests,p_name,p_phone,p_email,p_comment);
 end $$;
 revoke all on function public.submit_stepan_booking(date,date,integer,text,text,text,text) from public,anon,authenticated;
-grant execute on function public.submit_stepan_booking(date,date,integer,text,text,text,text) to anon,authenticated;
+grant execute on function public.submit_stepan_booking(date,date,integer,text,text,text,text) to anon,authenticated,service_role;
 create function public.booking_pilot_set(p_property uuid,p_state text) returns void language plpgsql security definer set search_path='' set lock_timeout='2s' as $$
 begin
  if p_state is null or p_state not in('prepared','active','paused') or not exists(select 1 from public.properties where id=p_property and source_key='house_001') then raise exception 'invalid_pilot' using errcode='22023';end if;
