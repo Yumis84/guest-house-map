@@ -38,7 +38,7 @@ union all
 select l.id,'OLD-'||upper(substr(replace(l.id::text,'-',''),1,8)),l.checkin,l.checkout,l.guests,
 case l.status when 'new' then 'pending' when 'reviewing' then 'pending' when 'accepted' then 'confirmed' else l.status end,
 l.revision,l.created_at,p.id,p.name,'none',null::timestamptz,
-l.status in('new','reviewing') or (l.status='accepted' and l.reservation_id is not null),'•••'||right(c.phone,4),'legacy',l.status='accepted' and l.reservation_id is null
+l.status in('new','reviewing','accepted'),'•••'||right(c.phone,4),'legacy',l.status='accepted' and l.reservation_id is null
 from public.booking_requests l join public.properties p on p.id=l.property_id left join public.booking_guest_contacts c on c.request_id=l.id;
 revoke all on widget_private.owner_feed from public,anon,authenticated;
 create or replace function public.booking_owner_list(p_property uuid,p_status text default '',p_cursor jsonb default null,p_limit integer default 50,p_q text default '') returns jsonb language plpgsql security definer set search_path='' as $$

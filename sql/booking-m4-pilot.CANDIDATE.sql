@@ -5,17 +5,17 @@ alter table widget_private.pilots enable row level security;
 revoke all on widget_private.pilots from public,anon,authenticated;
 create function public.booking_pilot_enabled(p_unit uuid) returns boolean language plpgsql security definer set search_path='' as $$
 declare prop uuid;begin
- select property_id into prop from public.physical_units where id=p_unit;perform widget_private.booking_assert_owner(prop);
+ select property_id into prop from public.physical_units where id=p_unit;if current_setting('role',true)<>'service_role' then perform widget_private.booking_assert_owner(prop);end if;
  return exists(select 1 from widget_private.pilots where property_id=prop and state in('active','paused'));
 end $$;
 revoke all on function public.booking_pilot_enabled(uuid) from public,anon,authenticated;
-grant execute on function public.booking_pilot_enabled(uuid) to authenticated;
+grant execute on function public.booking_pilot_enabled(uuid) to authenticated,service_role;
 -- SECURITY INVOKER is intentional: direct API role is visible; a reviewed
 -- SECURITY DEFINER booking RPC runs as its owner and may perform the write.
 create function widget_private.guard_pilot_dml() returns trigger language plpgsql security invoker set search_path='' as $$
 declare unit uuid;begin
  if tg_op='DELETE' then unit=old.unit_id;else unit=new.unit_id;end if;
- if current_user in('anon','authenticated') and public.booking_pilot_enabled(unit) then raise exception 'use_booking_rpc' using errcode='42501';end if;
+ if current_user in('anon','authenticated','service_role') and public.booking_pilot_enabled(unit) then raise exception 'use_booking_rpc' using errcode='42501';end if;
  if tg_op='DELETE' then return old;else return new;end if;
 end $$;
 revoke all on function widget_private.guard_pilot_dml() from public,anon,authenticated;
