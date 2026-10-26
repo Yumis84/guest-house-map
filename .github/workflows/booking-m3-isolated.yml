@@ -2,10 +2,14 @@ name: Booking M3 isolated acceptance
 on:
   pull_request:
     paths: ['booking-owner.*', 'booking-calendar.js', 'widget/v2*', 'server/widget-request/**', 'sql/booking-m3-*.sql', 'tests/booking/**', '.github/workflows/booking-m3-isolated.yml']
+concurrency:
+  group: m3-isolated-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
   postgrest-browser:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -28,11 +32,19 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci --ignore-scripts
-      - run: |
-          npm install --no-save --package-lock=false playwright@1.56.1
-          npx playwright install --with-deps chromium
+      - name: Install browser library with bounded registry retries
+        timeout-minutes: 3
+        run: npm install --no-save --package-lock=false --fetch-retries=1 --fetch-timeout=30000 playwright@1.56.1
+      - name: Install Chromium and system dependencies
+        timeout-minutes: 5
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '30000'
+        run: npx playwright install --with-deps chromium
+      - name: Prepare PostgREST and ephemeral TLS
+        timeout-minutes: 5
+        run: |
           mkdir /tmp/m3-postgrest
-          curl -fLsS https://github.com/PostgREST/postgrest/releases/download/v16.5/postgrest-v16.5-linux-static-x86-64.tar.xz | tar -xJ -C /tmp/m3-postgrest
+          curl -fLsS --connect-timeout 15 --max-time 120 --retry 2 https://github.com/PostgREST/postgrest/releases/download/v16.5/postgrest-v16.5-linux-static-x86-64.tar.xz | tar -xJ -C /tmp/m3-postgrest
           openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/m3-local.key -out /tmp/m3-local.crt -days 1 -subj /CN=127.0.0.1 -addext 'subjectAltName=IP:127.0.0.1,DNS:localhost'
       - name: Syntax, CAPTCHA and guards
         run: |
