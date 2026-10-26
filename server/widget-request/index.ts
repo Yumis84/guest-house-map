@@ -2,14 +2,15 @@
 import {handleWidgetRequest} from './handler.mjs';
 import {handleAvailability} from './availability.mjs';
 import {verifyTurnstile} from './captcha.mjs';
+import {trustedGatewayIp} from './gateway.mjs';
 const env=(name:string)=>Deno.env.get(name)||'';
 const api=env('SUPABASE_URL'),key=env('SUPABASE_SERVICE_ROLE_KEY');
 const origin=env('WIDGET_ORIGIN'),salt=env('WIDGET_HASH_SECRET');
 const captchaSecret=env('TURNSTILE_SECRET_KEY'),captchaHostname=env('TURNSTILE_EXPECTED_HOSTNAME');
-const trustedHeader=env('WIDGET_TRUSTED_IP_HEADER');
+const gatewaySecret=env('WIDGET_GATEWAY_SECRET');
 const enabled=env('WIDGET_BOOKING_ENABLED')==='true'&&env('WIDGET_GATEWAY_REVIEWED')==='true'
  &&/^https:\/\/[^/]+\.supabase\.co$/.test(api)&&!!key&&salt.length>=32&&!!captchaSecret&&!!captchaHostname
- &&/^https:\/\/[^/]+$/.test(origin)&&['x-real-ip','x-forwarded-for'].includes(trustedHeader);
+ &&/^https:\/\/[^/]+$/.test(origin)&&gatewaySecret.length>=32;
 async function rpc(name:string,args:unknown){
  const response=await fetch(api+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(args),signal:AbortSignal.timeout(8000)});
  if(!response.ok){const data=await response.json().catch(()=>({}));throw {code:data.code};}
@@ -21,9 +22,6 @@ async function hash(value:string){
 }
 const deps={
  origin,enabled,
- // Must be a header OVERWRITTEN by the reviewed trusted gateway; never enable
- // based merely on an incoming user-supplied X-Forwarded-For. See deployment notes.
- clientIp:(req:Request)=>req.headers.get(trustedHeader)?.split(',')[0].trim(),
  today:()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Kaliningrad',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),
  hash,
  rateLimit:(p_key:string,p_limit:number,p_seconds:number)=>rpc('widget_v2_rate_limit',{p_key,p_limit,p_seconds}),
@@ -31,4 +29,9 @@ const deps={
  availability:(p_widget:string,p_start:string,p_end:string)=>rpc('booking_public_availability',{p_widget,p_start,p_end}),
  submit:(p_widget:string,p_payload:unknown,p_idempotency:string,p_fingerprint:string,p_actor:string)=>rpc('booking_submit',{p_widget,p_payload,p_idempotency,p_fingerprint,p_actor})
 };
-Deno.serve((request:Request)=>new URL(request.url).pathname.endsWith('/availability')?handleAvailability(request,deps):handleWidgetRequest(request,deps));
+Deno.serve(async(request:Request)=>{
+ const handler=new URL(request.url).pathname.endsWith('/availability')?handleAvailability:handleWidgetRequest;
+ if(request.method==='OPTIONS'||!enabled)return handler(request,{...deps,clientIp:()=>null});
+ const ip=await trustedGatewayIp(request,gatewaySecret);if(!ip)return Response.json({error:'gateway_not_verified'},{status:403,headers:{'Cache-Control':'no-store'}});
+ return handler(request,{...deps,clientIp:()=>ip});
+});
