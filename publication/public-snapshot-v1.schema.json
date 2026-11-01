@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yumis84.github.io/guest-house-map/schemas/public-snapshot-v1.schema.json",
+  "title": "Guest House Public Snapshot V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "snapshotId", "publishedAt", "previousSnapshotId", "houses"],
+  "properties": {
+    "schemaVersion": { "const": "guest-house-public-snapshot/v1" },
+    "snapshotId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "publishedAt": { "type": "string", "format": "date-time" },
+    "previousSnapshotId": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" }
+      ]
+    },
+    "houses": {
+      "type": "array",
+      "minItems": 7,
+      "items": { "$ref": "#/$defs/house" }
+    }
+  },
+  "$defs": {
+    "nullableNonNegativeNumber": {
+      "anyOf": [{ "type": "null" }, { "type": "number", "minimum": 0 }]
+    },
+    "safeUrl": {
+      "type": "string",
+      "pattern": "^(https://|assets/)[^\\s]+$"
+    },
+    "house": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "sourceKey", "name", "address", "lat", "lng", "capacity",
+        "price", "amenities", "phone", "email", "site", "description",
+        "active", "parentId", "photos"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^house_[0-9]{3}$" },
+        "sourceKey": { "type": "string", "pattern": "^house_[0-9]{3}$" },
+        "name": { "type": "string", "minLength": 1 },
+        "address": { "type": "string", "minLength": 1 },
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lng": { "type": "number", "minimum": -180, "maximum": 180 },
+        "capacity": { "$ref": "#/$defs/nullableNonNegativeNumber" },
+        "price": { "$ref": "#/$defs/nullableNonNegativeNumber" },
+        "amenities": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "phone": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^\\+[1-9][0-9]{7,14}$" }] },
+        "email": { "anyOf": [{ "type": "null" }, { "type": "string", "format": "email" }] },
+        "site": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/safeUrl" }] },
+        "description": { "type": "string", "minLength": 1 },
+        "active": { "const": true },
+        "parentId": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^house_[0-9]{3}$" }] },
+        "photos": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/safeUrl" }, "uniqueItems": true }
+      }
+    }
+  }
+}
