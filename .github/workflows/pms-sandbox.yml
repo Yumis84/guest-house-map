@@ -1,0 +1,41 @@
+name: PMS sandbox PostgreSQL tests
+
+on:
+  pull_request:
+    paths:
+      - "sql/sandbox/**"
+      - "scripts/test_pms_sandbox.py"
+      - ".github/workflows/pms-sandbox.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pms_test
+          POSTGRES_PASSWORD: pms_test_only
+          POSTGRES_DB: pms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pms_test -d pms_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      PMS_SANDBOX_DSN: postgresql://pms_test:pms_test_only@127.0.0.1:5432/pms_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Verify disposable local DB
+        run: psql "$PMS_SANDBOX_DSN" -X -v ON_ERROR_STOP=1 -c "SELECT current_database(), version()"
+      - name: Run SQL smoke and concurrency tests
+        run: python3 scripts/test_pms_sandbox.py
