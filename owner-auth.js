@@ -26,7 +26,11 @@ try{
   client.auth.onAuthStateChange((event)=>{
     if(event==='PASSWORD_RECOVERY'){recoverySession=true;setMode('update');}
   });
-  const {data,error}=await client.auth.getSession();
+  // Do not leave the login form disabled indefinitely if session storage or Auth stalls.
+  const {data,error}=await Promise.race([
+    client.auth.getSession(),
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('session_timeout')),8000))
+  ]);
   if(error)throw error;
   // A recovery URL alone grants no authority; updateUser still requires a valid Auth session.
   if(new URL(location.href).searchParams.get('flow')==='recovery'){
@@ -41,7 +45,15 @@ try{
   if(location.hash.includes('error')){$('#status').textContent='Ссылка недействительна или истекла. Запросите новую.';}
   if(new URL(location.href).searchParams.get('notice')==='logout-local')$('#status').textContent='Вы вышли на этом устройстве. Завершение серверной сессии не подтверждено.';
   history.replaceState(null,'',location.pathname+(recoverySession?'?flow=recovery':''));
-}catch(error){$('#status').textContent=error.message?.startsWith('Подключение')?error.message:'Подключение недоступно. Попробуйте позже.';client=null;}
+}catch(error){
+  if(error.message==='session_timeout'){
+    $('#status').textContent='Проверка сессии заняла слишком много времени. Обновите страницу или попробуйте войти повторно.';
+    // Keep the login form usable; a timed-out session check does not prove Auth is unavailable.
+  }else{
+    $('#status').textContent=error.message?.startsWith('Подключение')?error.message:'Подключение недоступно. Попробуйте позже.';
+    client=null;
+  }
+}
 setBusy(false);
 $('#form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy||!client)return;
