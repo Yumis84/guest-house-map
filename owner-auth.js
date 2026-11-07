@@ -23,6 +23,8 @@ function setBusy(value){busy=value;$('#form').setAttribute('aria-busy',String(va
 try{
   client=getClient();
   setMode('signin');
+  // Login must remain available even while a stored session is being checked.
+  setBusy(false);
   client.auth.onAuthStateChange((event)=>{
     if(event==='PASSWORD_RECOVERY'){recoverySession=true;setMode('update');}
   });
@@ -36,7 +38,7 @@ try{
   if(new URL(location.href).searchParams.get('flow')==='recovery'){
     if(data.session){recoverySession=true;setMode('update');}
     else {setMode('recovery');$('#status').textContent='Ссылка недействительна или истекла. Запросите новую ссылку в этом браузере.';}
-  }else if(data.session&&!recoverySession){
+  }else if(data.session&&!recoverySession&&!busy){
     const {data:verified,error:verifyError}=await client.auth.getUser();
     if(!verifyError&&verified.user)location.replace('./owner.html');
     else $('#status').textContent='Сессию не удалось подтвердить. Войдите снова.';
@@ -62,7 +64,7 @@ $('#form').addEventListener('submit',async event=>{
   try{
     const email=$('#email').value.trim(),password=$('#password').value;
     let result;
-    if(mode==='signin') result=await client.auth.signInWithPassword({email,password});
+    if(mode==='signin') result=await Promise.race([client.auth.signInWithPassword({email,password}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('auth_timeout')),12000))]);
     if(mode==='signup') result=await client.auth.signUp({email,password});
     if(mode==='recovery') result=await client.auth.resetPasswordForEmail(email,{redirectTo:new URL('./login.html?flow=recovery',location.href).href});
     if(mode==='update'){
@@ -78,6 +80,6 @@ $('#form').addEventListener('submit',async event=>{
       const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;
       recoverySession=false;busy=false;setMode('signin');history.replaceState(null,'',location.pathname);$('#status').textContent='Пароль обновлён. Войдите с новым паролем.';
     }
-  }catch(error){$('#status').textContent=mode==='signin'?'Не удалось войти. Проверьте email и пароль.':errorMessage(error);}
+  }catch(error){$('#status').textContent=error.message==='auth_timeout'?'Сервер авторизации не ответил за 12 секунд. Попробуйте позже.':mode==='signin'?'Не удалось войти. Проверьте email и пароль.':errorMessage(error);}
   finally{setBusy(false);}
 });
