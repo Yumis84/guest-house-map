@@ -56,7 +56,7 @@ try{
     client=null;
   }
 }
-setBusy(false);
+if(!busy)setBusy(false);
 $('#form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy||!client)return;
   if(['signup','update'].includes(mode)&&$('#password').value!==$('#confirm').value){$('#status').textContent='Пароли не совпадают.';return;}
