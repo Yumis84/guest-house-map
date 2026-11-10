@@ -10,6 +10,9 @@
       padding:0 0 72px!important;
       overflow:hidden!important;
       background:#0b100f!important;
+      display:flex!important;
+      flex-direction:column!important;
+      box-sizing:border-box!important;
     }
 
     #assistant > .head,
@@ -20,7 +23,8 @@
     #chatHost{
       margin:0!important;
       width:100%!important;
-      height:100%!important;
+      height:auto!important;
+      flex:1 1 0!important;
       min-height:0!important;
       border:0!important;
       border-radius:0!important;
