@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   postgres-m1:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:17
@@ -31,7 +31,7 @@ jobs:
           BOOKING_TEST_DATABASE_URL: postgresql://bookingtest:synthetic-only@127.0.0.1:5432/synthetic_booking_ci
 
   postgres-m2:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:17

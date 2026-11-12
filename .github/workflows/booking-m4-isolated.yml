@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   compatibility:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:17
@@ -34,7 +34,7 @@ jobs:
           name: m4-compatibility-evidence
           path: test-results/m4/
   real-auth:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:17
@@ -87,7 +87,7 @@ jobs:
         if: always()
         run: docker rm -f m4-gotrue || true
   turnstile-provider:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -100,7 +100,7 @@ jobs:
           name: m4-real-turnstile-testkeys-evidence
           path: test-results/m4/
   real-edge:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:17
@@ -131,7 +131,7 @@ jobs:
           name: m4-real-edge-evidence
           path: test-results/m4/
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:17

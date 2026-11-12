@@ -2,7 +2,7 @@ import {setWidgetProperties} from './owner-widget.js';
 import {getClient,errorMessage} from './owner-common.js';
 import {loadAccessibleProperties} from './owner-access.js';
 const $=s=>document.querySelector(s),views=[...document.querySelectorAll('[data-view]')];
-let client,loading=false;
+let client,loading=false,signingOut=false;
 function selectView(){const requested=location.hash.slice(1),view=views.some(n=>n.dataset.view===requested)?requested:'properties';views.forEach(n=>n.hidden=n.dataset.view!==view);document.querySelectorAll('[data-view-link]').forEach(n=>n.toggleAttribute('aria-current',n.dataset.viewLink===view));}
 function show(title,message){$('#loadingMark').hidden=true;$('#heading').textContent=title;$('#message').textContent=message;}
 function bookingLink(label,view,property){const a=document.createElement('a');a.className='secondary';a.textContent=label;const url=new URL('./booking-owner.html',location.href);url.searchParams.set('view',view);if(property)url.searchParams.set('property',property);a.href=url.href;return a;}
@@ -26,10 +26,10 @@ $('#reload').onclick=()=>load();window.addEventListener('hashchange',selectView)
 try{
  client=getClient();$('#signout').hidden=false;
  $('#signout').onclick=async()=>{
-  $('#signout').disabled=true;
+  signingOut=true;$('#signout').disabled=true;
   try{const r=await client.auth.signOut();if(r.error)throw r.error;location.replace('./login.html');}
-  catch(e){show('Не удалось выйти',errorMessage(e));$('#signout').disabled=false;}
+  catch(e){signingOut=false;show('Не удалось выйти',errorMessage(e));$('#signout').disabled=false;}
  };
- client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')location.replace('./login.html');});
+ client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT'&&!signingOut)location.replace('./login.html');});
  void load();
 }catch(e){show('Кабинет недоступен',errorMessage(e));}
