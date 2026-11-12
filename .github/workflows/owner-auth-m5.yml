@@ -1,7 +1,7 @@
 name: Owner Auth M5
 on:
   pull_request:
-    paths: ['owner*', 'login.html', 'booking-owner.js', 'sql/booking-m4*', 'tests/**', '.github/workflows/owner-auth-m5.yml', 'package*.json']
+    paths: ['owner*', 'login.html', 'booking-owner.js', 'sql/booking-m4*', 'sql/booking-m5*', 'tests/**', '.github/workflows/owner-auth-m5.yml', 'package*.json']
 permissions:
   contents: read
 jobs:
