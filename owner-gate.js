@@ -13,6 +13,9 @@ async function load(){
   if(error){if([401,403].includes(error.status)){location.replace('./login.html');return;}throw error;}
   if(!data.user){location.replace('./login.html');return;}
   $('#accountEmail').textContent=data.user.email||'Email не указан';
+  const membership=await client.from('company_members').select('company_id,member_role').eq('user_id',data.user.id);if(membership.error)throw membership.error;
+  const roleLabels={owner:'Владелец',admin:'Администратор',manager:'Управляющий',staff:'Сотрудник'};
+  $('#accountRoles').textContent=[...new Set((membership.data||[]).map(m=>roleLabels[m.member_role]||'Доступ по назначенной роли'))].join(' · ')||'Нет назначенных ролей';
   const items=await loadAccessibleProperties(client,data.user.id);setWidgetProperties(items);
   show(items.length?'Доступные объекты':'Объектов пока нет',items.length?`${items.length} объектов в вашем кабинете.`:'Аккаунт ещё не привязан к объектам. Обратитесь к администратору. Регистрация не выдаёт права автоматически.');
   for(const p of items){
