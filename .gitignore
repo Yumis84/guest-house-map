@@ -1,0 +1,5 @@
+test-results/
+.widget-test-runtime/
+node_modules/
+.env
+.env.*

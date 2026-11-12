@@ -1,0 +1,827 @@
+{
+  "checked": "2026-10-25",
+  "project_ref": "ojifyifewlwzkysgxogo",
+  "rpcs": [
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "ensure_unit_inventory_mapping",
+      "definition": "CREATE OR REPLACE FUNCTION public.ensure_unit_inventory_mapping()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$ begin if not exists (select 1 from public.unit_resource_requirements u where u.unit_id = new.unit_id) then raise exception 'Unit has no configured inventory resources'; end if; return new; end $function$\n"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "sync_reservation_inventory",
+      "definition": "CREATE OR REPLACE FUNCTION public.sync_reservation_inventory()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\ndeclare v_count int;\nbegin\n  if tg_op = 'DELETE' then\n    delete from public.inventory_allocations where reservation_id=old.id;\n    return old;\n  end if;\n  if tg_op = 'UPDATE' then\n    delete from public.inventory_allocations where reservation_id=new.id;\n  end if;\n  if new.status in ('pending','confirmed') then\n    select count(*) into v_count from public.unit_resource_requirements where unit_id=new.unit_id;\n    if v_count=0 then raise exception 'Missing inventory resource mapping'; end if;\n    insert into public.inventory_allocations(resource_id,starts_at,ends_at,allocation_kind,unit_id,reservation_id)\n    select resource_id, (new.checkin::timestamp at time zone 'UTC'), (new.checkout::timestamp at time zone 'UTC'), 'reservation', new.unit_id,new.id\n    from public.unit_resource_requirements where unit_id=new.unit_id order by resource_id;\n  end if;\n  return new;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "guard_inventory_mapping_changes",
+      "definition": "CREATE OR REPLACE FUNCTION public.guard_inventory_mapping_changes()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\ndeclare v_unit uuid;\nbegin\n v_unit:=case when tg_op='DELETE' then old.unit_id else new.unit_id end;\n if exists(select 1 from public.inventory_allocations where unit_id=v_unit) then\n  raise exception 'Cannot change inventory mapping while allocations exist for unit';\n end if;\n if tg_op='DELETE' then return old; end if;\n return new;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "owner_property_revision",
+      "definition": "CREATE OR REPLACE FUNCTION public.owner_property_revision()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  if new.published is distinct from old.published then\n    raise exception 'Publication status is controlled by moderation pipeline' using errcode='42501';\n  end if;\n  new.owner_revision=old.owner_revision+1;\n  return new;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "sync_unit_block_inventory",
+      "definition": "CREATE OR REPLACE FUNCTION public.sync_unit_block_inventory()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\ndeclare v_count int;\nbegin\n if tg_op='DELETE' then\n  delete from public.inventory_allocations where block_id=old.id;\n  return old;\n end if;\n if tg_op='UPDATE' then\n  delete from public.inventory_allocations where block_id=new.id;\n end if;\n select count(*) into v_count from public.unit_resource_requirements where unit_id=new.unit_id;\n if v_count=0 then raise exception 'Missing inventory resource mapping for block'; end if;\n insert into public.inventory_allocations(resource_id,starts_at,ends_at,allocation_kind,unit_id,block_id)\n select resource_id,(new.starts_on::timestamp at time zone 'UTC'),(new.ends_on::timestamp at time zone 'UTC'),'block',new.unit_id,new.id\n from public.unit_resource_requirements where unit_id=new.unit_id order by resource_id;\n return new;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "owner_photo_access",
+      "definition": "CREATE OR REPLACE FUNCTION public.owner_photo_access(object_name text, write_access boolean)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n  select object_name ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}/[0-9a-f-]{36}\\.webp$'\n  and exists (\n    select 1 from public.properties p join public.company_members cm on cm.company_id=p.company_id\n    where p.company_id::text=split_part(object_name,'/',1)\n      and p.id::text=split_part(object_name,'/',2)\n      and cm.user_id=(select auth.uid())\n      and (not write_access or cm.member_role in ('owner','admin','manager'))\n  );\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "owner_cabinet_version",
+      "definition": "CREATE OR REPLACE FUNCTION public.owner_cabinet_version()\n RETURNS integer\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ select 1 $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "public_calendar_blocks",
+      "definition": "CREATE OR REPLACE FUNCTION public.public_calendar_blocks(p_property_id uuid)\n RETURNS TABLE(starts_on date, ends_on date)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ select b.starts_on,b.ends_on from public.unit_blocks b join public.physical_units u on u.id=b.unit_id join public.properties p on p.id=u.property_id where p.id=p_property_id and p.published=true and u.active=true $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "stepan_widget_blocks",
+      "definition": "CREATE OR REPLACE FUNCTION public.stepan_widget_blocks()\n RETURNS TABLE(starts_on date, ends_on date)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ SELECT b.starts_on,b.ends_on FROM public.unit_blocks b JOIN public.physical_units u ON u.id=b.unit_id WHERE u.property_id='4372d741-eab4-4c42-9ddc-88f78368f9b6'::uuid AND u.active=true ORDER BY b.starts_on $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "submit_stepan_booking",
+      "definition": "CREATE OR REPLACE FUNCTION public.submit_stepan_booking(p_checkin date, p_checkout date, p_guests integer, p_name text, p_phone text, p_email text DEFAULT NULL::text, p_comment text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE v_request uuid;v_unit uuid;v_phone text;\nBEGIN\n IF p_checkin IS NULL OR p_checkout IS NULL OR p_checkin < CURRENT_DATE OR p_checkout<=p_checkin OR p_checkout>p_checkin+60 OR p_guests NOT BETWEEN 1 AND 8 THEN RAISE EXCEPTION 'invalid_booking_dates_or_guests'; END IF;\n IF char_length(trim(coalesce(p_name,''))) NOT BETWEEN 2 AND 120 OR char_length(trim(coalesce(p_phone,''))) NOT BETWEEN 7 AND 32 OR char_length(coalesce(p_email,''))>200 OR char_length(coalesce(p_comment,''))>1000 THEN RAISE EXCEPTION 'invalid_booking_contact'; END IF;\n v_phone:=trim(p_phone);\n PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(v_phone));\n IF (SELECT count(*) FROM public.booking_guest_contacts c WHERE c.phone=v_phone AND c.created_at>now()-interval '24 hours')>=3 THEN RAISE EXCEPTION 'too_many_requests'; END IF;\n IF (SELECT count(*) FROM public.booking_requests r WHERE r.property_id='4372d741-eab4-4c42-9ddc-88f78368f9b6'::uuid AND r.created_at>now()-interval '1 hour')>=50 THEN RAISE EXCEPTION 'temporarily_unavailable'; END IF;\n SELECT id INTO v_unit FROM public.physical_units WHERE property_id='4372d741-eab4-4c42-9ddc-88f78368f9b6'::uuid AND active=true LIMIT 1;\n IF v_unit IS NULL THEN RAISE EXCEPTION 'booking_unavailable'; END IF;\n IF EXISTS(SELECT 1 FROM public.unit_blocks WHERE unit_id=v_unit AND starts_on<p_checkout AND ends_on>p_checkin)\n OR EXISTS(SELECT 1 FROM public.reservations WHERE unit_id=v_unit AND status IN ('pending','confirmed') AND checkin<p_checkout AND checkout>p_checkin) THEN RAISE EXCEPTION 'dates_unavailable'; END IF;\n INSERT INTO public.booking_requests(property_id,unit_id,checkin,checkout,guests,status,source)\n VALUES ('4372d741-eab4-4c42-9ddc-88f78368f9b6'::uuid,v_unit,p_checkin,p_checkout,p_guests,'new','stepan-unified-widget') RETURNING id INTO v_request;\n INSERT INTO public.booking_guest_contacts(request_id,guest_name,phone,email,guest_comment) VALUES(v_request,trim(p_name),v_phone,nullif(trim(coalesce(p_email,'')),''),nullif(trim(coalesce(p_comment,'')),''));\n RETURN v_request;\nEND $function$\n"
+    }
+  ],
+  "grants": [
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "unit_blocks",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "INSERT",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "unit_blocks",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "unit_blocks",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "DELETE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "INSERT",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "UPDATE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "DELETE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "TRUNCATE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "REFERENCES",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "TRIGGER",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "INSERT",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "UPDATE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "DELETE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "TRUNCATE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "REFERENCES",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "physical_units",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "TRIGGER",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "INSERT",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "UPDATE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "DELETE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "TRUNCATE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "REFERENCES",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "TRIGGER",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "INSERT",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "UPDATE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "DELETE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "TRUNCATE",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "REFERENCES",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "room_types",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "TRIGGER",
+      "with_hierarchy": "NO"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "booking_requests",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "anon",
+      "grantor": "postgres",
+      "table_name": "properties",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "properties",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "company_members",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "unit_resource_requirements",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    },
+    {
+      "grantee": "authenticated",
+      "grantor": "postgres",
+      "table_name": "booking_guest_contacts",
+      "is_grantable": "NO",
+      "table_schema": "public",
+      "table_catalog": "postgres",
+      "privilege_type": "SELECT",
+      "with_hierarchy": "YES"
+    }
+  ],
+  "tables": [
+    "amenities",
+    "booking_guest_contacts",
+    "booking_requests",
+    "buildings",
+    "calendar_connections",
+    "companies",
+    "company_members",
+    "extra_services",
+    "inventory_allocations",
+    "inventory_resources",
+    "media_assets",
+    "physical_units",
+    "properties",
+    "property_amenities",
+    "property_members",
+    "rate_plans",
+    "reservations",
+    "room_types",
+    "unit_amenities",
+    "unit_blocks",
+    "unit_resource_requirements"
+  ],
+  "policies": [
+    {
+      "cmd": "DELETE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM ((physical_units u\n     JOIN properties p ON ((p.id = u.property_id)))\n     JOIN company_members cm ON ((cm.company_id = p.company_id)))\n  WHERE ((u.id = unit_blocks.unit_id) AND (cm.user_id = ( SELECT auth.uid() AS uid)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "unit_blocks",
+      "permissive": "PERMISSIVE",
+      "policyname": "owner_delete_blocks",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "unit_blocks",
+      "permissive": "PERMISSIVE",
+      "policyname": "owner_insert_blocks",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM ((physical_units u\n     JOIN properties p ON ((p.id = u.property_id)))\n     JOIN company_members cm ON ((cm.company_id = p.company_id)))\n  WHERE ((u.id = unit_blocks.unit_id) AND (cm.user_id = ( SELECT auth.uid() AS uid)))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM ((physical_units u\n     JOIN properties p ON ((p.id = u.property_id)))\n     JOIN company_members cm ON ((cm.company_id = p.company_id)))\n  WHERE ((u.id = unit_blocks.unit_id) AND (cm.user_id = ( SELECT auth.uid() AS uid)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "unit_blocks",
+      "permissive": "PERMISSIVE",
+      "policyname": "owner_read_blocks",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (properties p\n     JOIN company_members cm ON ((cm.company_id = p.company_id)))\n  WHERE ((p.id = physical_units.property_id) AND (cm.user_id = ( SELECT auth.uid() AS uid)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "physical_units",
+      "permissive": "PERMISSIVE",
+      "policyname": "owner_read_units",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "false",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "physical_units",
+      "permissive": "PERMISSIVE",
+      "policyname": "published_units_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (properties p\n     JOIN company_members cm ON ((cm.company_id = p.company_id)))\n  WHERE ((p.id = room_types.property_id) AND (cm.user_id = ( SELECT auth.uid() AS uid)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "room_types",
+      "permissive": "PERMISSIVE",
+      "policyname": "owner_read_room_types",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM properties p\n  WHERE ((p.id = room_types.property_id) AND p.published)))",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "room_types",
+      "permissive": "PERMISSIVE",
+      "policyname": "published_room_types_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (properties p\n     JOIN company_members cm ON ((cm.company_id = p.company_id)))\n  WHERE ((p.id = booking_requests.property_id) AND (cm.user_id = auth.uid()))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "booking_requests",
+      "permissive": "PERMISSIVE",
+      "policyname": "booking_requests_owner_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM company_members m\n  WHERE ((m.company_id = companies.id) AND (m.user_id = ( SELECT auth.uid() AS uid)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "companies",
+      "permissive": "PERMISSIVE",
+      "policyname": "members_can_read_their_companies",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(EXISTS ( SELECT 1\n   FROM company_members cm\n  WHERE ((cm.company_id = properties.company_id) AND (cm.user_id = ( SELECT auth.uid() AS uid)) AND (cm.member_role = ANY (ARRAY['owner'::text, 'admin'::text, 'manager'::text])))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "properties",
+      "permissive": "PERMISSIVE",
+      "policyname": "owner_update_properties",
+      "schemaname": "public",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM company_members cm\n  WHERE ((cm.company_id = properties.company_id) AND (cm.user_id = ( SELECT auth.uid() AS uid)) AND (cm.member_role = ANY (ARRAY['owner'::text, 'admin'::text, 'manager'::text])))))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM company_members cm\n  WHERE ((cm.company_id = properties.company_id) AND (cm.user_id = ( SELECT auth.uid() AS uid)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "properties",
+      "permissive": "PERMISSIVE",
+      "policyname": "owner_read_properties",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "published",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "properties",
+      "permissive": "PERMISSIVE",
+      "policyname": "published_properties_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "company_members",
+      "permissive": "PERMISSIVE",
+      "policyname": "members_can_read_own_membership",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM ((booking_requests br\n     JOIN properties p ON ((p.id = br.property_id)))\n     JOIN company_members cm ON ((cm.company_id = p.company_id)))\n  WHERE ((br.id = booking_guest_contacts.request_id) AND (cm.user_id = auth.uid()))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "booking_guest_contacts",
+      "permissive": "PERMISSIVE",
+      "policyname": "booking_contacts_owner_read",
+      "schemaname": "public",
+      "with_check": null
+    }
+  ],
+  "triggers": [
+    "CREATE TRIGGER reservations_require_inventory BEFORE INSERT OR UPDATE OF unit_id ON public.reservations FOR EACH ROW EXECUTE FUNCTION ensure_unit_inventory_mapping()",
+    "CREATE TRIGGER sync_reservation_inventory_trigger AFTER INSERT OR DELETE OR UPDATE OF unit_id, checkin, checkout, status ON public.reservations FOR EACH ROW EXECUTE FUNCTION sync_reservation_inventory()",
+    "CREATE TRIGGER sync_unit_block_inventory_trigger AFTER INSERT OR DELETE OR UPDATE OF unit_id, starts_on, ends_on ON public.unit_blocks FOR EACH ROW EXECUTE FUNCTION sync_unit_block_inventory()",
+    "CREATE TRIGGER guard_inventory_mapping_trigger BEFORE INSERT OR DELETE OR UPDATE ON public.unit_resource_requirements FOR EACH ROW EXECUTE FUNCTION guard_inventory_mapping_changes()",
+    "CREATE TRIGGER owner_property_revision BEFORE UPDATE ON public.properties FOR EACH ROW EXECUTE FUNCTION owner_property_revision()"
+  ],
+  "constraints": [
+    {
+      "name": "unit_blocks_check",
+      "table": "unit_blocks",
+      "definition": "CHECK ((ends_on > starts_on))"
+    },
+    {
+      "name": "unit_blocks_pkey",
+      "table": "unit_blocks",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "unit_blocks_unit_id_fkey",
+      "table": "unit_blocks",
+      "definition": "FOREIGN KEY (unit_id) REFERENCES physical_units(id)"
+    },
+    {
+      "name": "reservations_status_check",
+      "table": "reservations",
+      "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'cancelled'::text, 'expired'::text])))"
+    },
+    {
+      "name": "reservation_dates_valid",
+      "table": "reservations",
+      "definition": "CHECK ((checkout > checkin))"
+    },
+    {
+      "name": "reservations_pkey",
+      "table": "reservations",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "reservations_idempotency_key_key",
+      "table": "reservations",
+      "definition": "UNIQUE (idempotency_key)"
+    },
+    {
+      "name": "prevent_unit_overlap",
+      "table": "reservations",
+      "definition": "EXCLUDE USING gist (unit_id WITH =, daterange(checkin, checkout, '[)'::text) WITH &&) WHERE ((status = ANY (ARRAY['pending'::text, 'confirmed'::text])))"
+    },
+    {
+      "name": "reservations_unit_id_fkey",
+      "table": "reservations",
+      "definition": "FOREIGN KEY (unit_id) REFERENCES physical_units(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "booking_requests_guests_check",
+      "table": "booking_requests",
+      "definition": "CHECK ((guests > 0))"
+    },
+    {
+      "name": "booking_requests_status_check",
+      "table": "booking_requests",
+      "definition": "CHECK ((status = ANY (ARRAY['new'::text, 'reviewing'::text, 'accepted'::text, 'declined'::text, 'cancelled'::text])))"
+    },
+    {
+      "name": "booking_requests_check",
+      "table": "booking_requests",
+      "definition": "CHECK ((checkout > checkin))"
+    },
+    {
+      "name": "booking_requests_pkey",
+      "table": "booking_requests",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "booking_requests_idempotency_key_key",
+      "table": "booking_requests",
+      "definition": "UNIQUE (idempotency_key)"
+    },
+    {
+      "name": "booking_requests_property_id_fkey",
+      "table": "booking_requests",
+      "definition": "FOREIGN KEY (property_id) REFERENCES properties(id)"
+    },
+    {
+      "name": "booking_requests_unit_id_fkey",
+      "table": "booking_requests",
+      "definition": "FOREIGN KEY (unit_id) REFERENCES physical_units(id)"
+    },
+    {
+      "name": "unit_blocks_no_overlap",
+      "table": "unit_blocks",
+      "definition": "EXCLUDE USING gist (unit_id WITH =, daterange(starts_on, ends_on, '[)'::text) WITH &&)"
+    },
+    {
+      "name": "inventory_allocations_allocation_kind_check",
+      "table": "inventory_allocations",
+      "definition": "CHECK ((allocation_kind = ANY (ARRAY['reservation'::text, 'block'::text, 'hold'::text])))"
+    },
+    {
+      "name": "inventory_allocations_check",
+      "table": "inventory_allocations",
+      "definition": "CHECK ((ends_at > starts_at))"
+    },
+    {
+      "name": "inventory_allocations_pkey",
+      "table": "inventory_allocations",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "inventory_allocations_resource_id_tstzrange_excl",
+      "table": "inventory_allocations",
+      "definition": "EXCLUDE USING gist (resource_id WITH =, tstzrange(starts_at, ends_at, '[)'::text) WITH &&)"
+    },
+    {
+      "name": "inventory_allocations_resource_id_fkey",
+      "table": "inventory_allocations",
+      "definition": "FOREIGN KEY (resource_id) REFERENCES inventory_resources(id)"
+    },
+    {
+      "name": "inventory_allocations_unit_id_fkey",
+      "table": "inventory_allocations",
+      "definition": "FOREIGN KEY (unit_id) REFERENCES physical_units(id)"
+    },
+    {
+      "name": "inventory_allocations_reservation_id_fkey",
+      "table": "inventory_allocations",
+      "definition": "FOREIGN KEY (reservation_id) REFERENCES reservations(id)"
+    },
+    {
+      "name": "inventory_allocations_block_id_fkey",
+      "table": "inventory_allocations",
+      "definition": "FOREIGN KEY (block_id) REFERENCES unit_blocks(id)"
+    },
+    {
+      "name": "allocation_source_consistency",
+      "table": "inventory_allocations",
+      "definition": "CHECK ((((allocation_kind = 'reservation'::text) AND (reservation_id IS NOT NULL) AND (block_id IS NULL)) OR ((allocation_kind = 'block'::text) AND (block_id IS NOT NULL) AND (reservation_id IS NULL)) OR ((allocation_kind = 'hold'::text) AND (reservation_id IS NULL) AND (block_id IS NULL))))"
+    },
+    {
+      "name": "allocation_unit_required",
+      "table": "inventory_allocations",
+      "definition": "CHECK ((unit_id IS NOT NULL))"
+    },
+    {
+      "name": "allocation_unique_resource_reservation",
+      "table": "inventory_allocations",
+      "definition": "UNIQUE (resource_id, reservation_id)"
+    },
+    {
+      "name": "allocation_unique_resource_block",
+      "table": "inventory_allocations",
+      "definition": "UNIQUE (resource_id, block_id)"
+    }
+  ]
+}

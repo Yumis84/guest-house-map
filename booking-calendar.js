@@ -1,0 +1,9 @@
+export const occupancyLabels={free:['○','Свободно'],reservation:['✓','Бронь'],hold:['◷','Удержание'],block:['▧','Блок'],external:['↗','Внешняя'],conflict:['!','Конфликт']};
+export function dateISO(d){return d.toISOString().slice(0,10);}
+export function monthDays(month){const first=new Date(month+'-01T12:00:00Z'),offset=(first.getUTCDay()+6)%7,n=new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth()+1,0)).getUTCDate();return [...Array(offset).fill(null),...Array.from({length:n},(_,i)=>month+'-'+String(i+1).padStart(2,'0'))];}
+export function dayOccupancy(day,events){return events.filter(e=>e.starts_on<=day&&e.ends_on>day);}
+export function renderMonth(root,{month,events=[],complete=false,onDay=()=>{}}){
+ root.replaceChildren();root.className='month-grid';
+ for(const label of ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']){const el=document.createElement('span');el.className='weekday';el.textContent=label;root.append(el);}
+ for(const day of monthDays(month)){if(!day){root.append(document.createElement('span'));continue;}const hits=dayOccupancy(day,events),kind=hits.length>1?'conflict':hits[0]?.kind||'free',info=occupancyLabels[kind];const b=document.createElement('button');b.type='button';b.className='day '+kind;b.dataset.date=day;b.setAttribute('aria-label',`${day}: ${complete?info[1]:hits.length?info[1]:'Данные неполные'}`);const n=document.createElement('strong');n.textContent=day.slice(-2);const label=document.createElement('small');label.textContent=complete||hits.length?info[0]+' '+info[1]:'? Нет данных';b.append(n,label);b.onclick=()=>onDay(day,hits);b.onkeydown=e=>{const move={ArrowLeft:-1,ArrowRight:1,ArrowUp:-7,ArrowDown:7}[e.key];if(move){e.preventDefault();const next=new Date(day+'T12:00:00Z');next.setUTCDate(next.getUTCDate()+move);root.querySelector(`[data-date="${dateISO(next)}"]`)?.focus();}};root.append(b);}
+}

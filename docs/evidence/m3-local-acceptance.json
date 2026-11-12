@@ -1,0 +1,131 @@
+{
+  "postgres": {
+    "version": "PostgreSQL 17.11 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit",
+    "results": [
+      {
+        "name": "widget HTTP handler -> native PG17 M2 RPC and idempotent retry",
+        "result": "PASS"
+      },
+      {
+        "name": "native PostgreSQL + btree_gist, baseline inventory trigger bodies loaded",
+        "result": "PASS"
+      },
+      {
+        "name": "simultaneous submits: requests retained, only one resource hold",
+        "result": "PASS"
+      },
+      {
+        "name": "exact 15 minute hold + expiry preserves pending request + late confirmation",
+        "result": "PASS"
+      },
+      {
+        "name": "expired request cannot confirm over manual block; remains pending",
+        "result": "PASS"
+      },
+      {
+        "name": "simultaneous confirmations of overlapping pending requests: one succeeds",
+        "result": "PASS"
+      },
+      {
+        "name": "confirmation vs expiry worker, repeated confirmation and cancel keep record",
+        "result": "PASS"
+      },
+      {
+        "name": "hold vs real reservation trigger on sibling resource rejects overlap",
+        "result": "PASS"
+      },
+      {
+        "name": "synthetic external channel allocation vs hold uses same exclusion domain",
+        "result": "PASS"
+      },
+      {
+        "name": "automatic maintenance process expires hold without changing request",
+        "result": "PASS"
+      },
+      {
+        "name": "missing-allocation drift still detects sibling reservation via resource fallback",
+        "result": "PASS"
+      },
+      {
+        "name": "five simultaneous confirms with one key create one reservation",
+        "result": "PASS"
+      },
+      {
+        "name": "deterministic resource locks avoid reversed unit deadlock",
+        "result": "PASS"
+      },
+      {
+        "name": "idempotent submit, normalized invalid payload errors, quota",
+        "result": "PASS"
+      },
+      {
+        "name": "audit P1: server-derived fingerprint, authorization before lock, bounded owner wait",
+        "result": "PASS"
+      },
+      {
+        "name": "150+ cursor paging + list masking + owner detail/contact authorization",
+        "result": "PASS"
+      },
+      {
+        "name": "contacts are explicit and audited; anon availability denied; stable input errors",
+        "result": "PASS"
+      },
+      {
+        "name": "manual block soft-release audited/idempotent and limiter cleanup",
+        "result": "PASS"
+      },
+      {
+        "name": "soft archive widget with requests retains history/FKs",
+        "result": "PASS"
+      },
+      {
+        "name": "10k requests pagination uses dedicated index",
+        "result": "PASS"
+      },
+      {
+        "name": "fail-closed disable preserves requests and reservations",
+        "result": "PASS"
+      }
+    ]
+  },
+  "browser": {
+    "base": "https://127.0.0.1:55444",
+    "postgrest": "16.5",
+    "auth": "Synthetic signed JWT + Auth getUser contract; NOT GoTrue",
+    "captcha": "Synthetic provider; NOT real Turnstile",
+    "results": [
+      {
+        "name": "real browser public month calendar at 320/390/768/1440",
+        "result": "PASS"
+      },
+      {
+        "name": "browser submit network failure then retry keeps key; HTTP handler -> real PostgREST -> hold",
+        "result": "PASS"
+      },
+      {
+        "name": "owner real SDK session contract -> PostgREST/RLS: masked list/detail, explicit contacts, confirm",
+        "result": "PASS"
+      },
+      {
+        "name": "owner calendar, unit switch, keyboard and widths; cancellation preserves reservation",
+        "result": "PASS"
+      },
+      {
+        "name": "manual block server RPC, idempotency, calendar source and soft removal",
+        "result": "PASS"
+      },
+      {
+        "name": "PostgREST JWT signature/expiry and owner isolation; no guest contacts leaked",
+        "result": "PASS"
+      },
+      {
+        "name": "expired hold retains pending request; owner late confirm repeats atomic availability",
+        "result": "PASS"
+      },
+      {
+        "name": "disabled gateway fails closed and no JavaScript errors",
+        "result": "PASS"
+      }
+    ]
+  }
+}

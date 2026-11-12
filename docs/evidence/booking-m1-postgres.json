@@ -1,0 +1,17 @@
+{
+  "version": "PostgreSQL 18.4 on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0, 64-bit",
+  "results": [
+    {
+      "name": "native PostgreSQL + btree_gist, baseline inventory trigger bodies loaded",
+      "result": "PASS"
+    },
+    {
+      "name": "M1 capability fail closed until ledger installed",
+      "result": "PASS"
+    },
+    {
+      "name": "M1 owner paginated list and isolated contact reveal",
+      "result": "PASS"
+    }
+  ]
+}

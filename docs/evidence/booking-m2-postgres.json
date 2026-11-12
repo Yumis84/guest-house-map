@@ -1,0 +1,81 @@
+{
+  "version": "PostgreSQL 18.4 on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0, 64-bit",
+  "results": [
+    {
+      "name": "native PostgreSQL + btree_gist, baseline inventory trigger bodies loaded",
+      "result": "PASS"
+    },
+    {
+      "name": "simultaneous submits: requests retained, only one resource hold",
+      "result": "PASS"
+    },
+    {
+      "name": "exact 15 minute hold + expiry preserves pending request + late confirmation",
+      "result": "PASS"
+    },
+    {
+      "name": "expired request cannot confirm over manual block; remains pending",
+      "result": "PASS"
+    },
+    {
+      "name": "simultaneous confirmations of overlapping pending requests: one succeeds",
+      "result": "PASS"
+    },
+    {
+      "name": "confirmation vs expiry worker, repeated confirmation and cancel keep record",
+      "result": "PASS"
+    },
+    {
+      "name": "hold vs real reservation trigger on sibling resource rejects overlap",
+      "result": "PASS"
+    },
+    {
+      "name": "synthetic external channel allocation vs hold uses same exclusion domain",
+      "result": "PASS"
+    },
+    {
+      "name": "automatic maintenance process expires hold without changing request",
+      "result": "PASS"
+    },
+    {
+      "name": "missing-allocation drift still detects sibling reservation via resource fallback",
+      "result": "PASS"
+    },
+    {
+      "name": "five simultaneous confirms with one key create one reservation",
+      "result": "PASS"
+    },
+    {
+      "name": "deterministic resource locks avoid reversed unit deadlock",
+      "result": "PASS"
+    },
+    {
+      "name": "idempotent submit, normalized invalid payload errors, quota",
+      "result": "PASS"
+    },
+    {
+      "name": "150+ cursor paging + list masking + owner detail/contact authorization",
+      "result": "PASS"
+    },
+    {
+      "name": "contacts are explicit and audited; anon availability denied; stable input errors",
+      "result": "PASS"
+    },
+    {
+      "name": "manual block soft-release audited/idempotent and limiter cleanup",
+      "result": "PASS"
+    },
+    {
+      "name": "soft archive widget with requests retains history/FKs",
+      "result": "PASS"
+    },
+    {
+      "name": "10k requests pagination uses dedicated index",
+      "result": "PASS"
+    },
+    {
+      "name": "fail-closed disable preserves requests and reservations",
+      "result": "PASS"
+    }
+  ]
+}

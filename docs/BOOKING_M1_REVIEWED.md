@@ -1,0 +1,9 @@
+# M1 candidate against Claude 285dfa19 / edba6367
+
+Base: completed M0b PR28. `booking-m1-lifecycle.CANDIDATE.sql` extends the existing private request/contact candidate from PR23, adds independent holds/history/revision/idempotency records and short codes. No live schema is changed. Existence of inaccessible requests is hidden by one `not_found` domain message. Contacts are explicit, masked in paginated list, audited/rate-limited on reveal. Owner list/detail/calendar/capabilities/transition RPCs use owner/admin membership. Owner API keeps JSON cursor (matching existing UI) instead of opaque text; cursor validation returns stable `invalid_payload`.
+
+M1 is intentionally fail-closed: lifecycle capability=false until M2 installs ledger. Submit, availability and expiry worker signatures cannot claim working booking until the M2 adapter. This prevents UI actions before full protection. M2 replaces only these seams and attaches ledger triggers; transition automaton lives here. A single transaction installs each candidate; no automatic migration directory.
+
+Variant B retained: request pending never becomes expired; hold states separate. Confirmation/cancellation/decline are idempotent and revision-checked; same key + different revision/action is rejected. Reservation cancellation preserves row. Archived widget keeps historical requests. ru-only config parity and exact15-minute activation constraint. Proposed contact retention remains unapproved.
+
+Local native PostgreSQL18.4 PASS: M1 schema/extension, closed capability, owner list/masking, contact reveal and outsider rejection. Full transition/concurrency tests run after M2. CI uses a fresh PostgreSQL17 service with synthetic-only database and no deployment secrets. Independent acceptance is still required; hosted Supabase/Auth/n8n/main untouched.

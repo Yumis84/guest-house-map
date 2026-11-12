@@ -20,51 +20,14 @@ function setMode(next){
 }
 for(const m of ['signin','signup','recovery'])$('#'+m).onclick=()=>setMode(m);
 function setBusy(value){busy=value;$('#form').setAttribute('aria-busy',String(value));document.querySelectorAll('button').forEach(b=>b.disabled=value||!client);}
-try{
-  client=getClient();
-  setMode('signin');
-  // Login must remain available even while a stored session is being checked.
-  setBusy(false);
-  client.auth.onAuthStateChange((event)=>{
-    if(event==='PASSWORD_RECOVERY'){recoverySession=true;setMode('update');}
-  });
-  // Do not leave the login form disabled indefinitely if session storage or Auth stalls.
-  const {data,error}=await Promise.race([
-    client.auth.getSession(),
-    new Promise((_,reject)=>setTimeout(()=>reject(new Error('session_timeout')),8000))
-  ]);
-  if(error)throw error;
-  // A recovery URL alone grants no authority; updateUser still requires a valid Auth session.
-  if(new URL(location.href).searchParams.get('flow')==='recovery'){
-    if(data.session){recoverySession=true;setMode('update');}
-    else {setMode('recovery');$('#status').textContent='Ссылка недействительна или истекла. Запросите новую ссылку в этом браузере.';}
-  }else if(data.session&&!recoverySession&&!busy){
-    const {data:verified,error:verifyError}=await client.auth.getUser();
-    if(!verifyError&&verified.user)location.replace('./owner.html');
-    else $('#status').textContent='Сессию не удалось подтвердить. Войдите снова.';
-  }
-  else $('#status').textContent='';
-  if(location.hash.includes('error')){$('#status').textContent='Ссылка недействительна или истекла. Запросите новую.';}
-  if(new URL(location.href).searchParams.get('notice')==='logout-local')$('#status').textContent='Вы вышли на этом устройстве. Завершение серверной сессии не подтверждено.';
-  history.replaceState(null,'',location.pathname+(recoverySession?'?flow=recovery':''));
-}catch(error){
-  if(error.message==='session_timeout'){
-    $('#status').textContent='Проверка сессии заняла слишком много времени. Обновите страницу или попробуйте войти повторно.';
-    // Keep the login form usable; a timed-out session check does not prove Auth is unavailable.
-  }else{
-    $('#status').textContent=error.message?.startsWith('Подключение')?error.message:'Подключение недоступно. Попробуйте позже.';
-    client=null;
-  }
-}
-if(!busy)setBusy(false);
 $('#form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy||!client)return;
   if(['signup','update'].includes(mode)&&$('#password').value!==$('#confirm').value){$('#status').textContent='Пароли не совпадают.';return;}
-  setBusy(true);$('#status').textContent='Подождите…';
+  interaction++;setBusy(true);$('#status').textContent='Подождите…';
   try{
     const email=$('#email').value.trim(),password=$('#password').value;
     let result;
-    if(mode==='signin') result=await Promise.race([client.auth.signInWithPassword({email,password}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('auth_timeout')),12000))]);
+    if(mode==='signin') result=await client.auth.signInWithPassword({email,password});
     if(mode==='signup') result=await client.auth.signUp({email,password});
     if(mode==='recovery') result=await client.auth.resetPasswordForEmail(email,{redirectTo:new URL('./login.html?flow=recovery',location.href).href});
     if(mode==='update'){
@@ -74,12 +37,46 @@ $('#form').addEventListener('submit',async event=>{
     if(result.error)throw result.error;
     $('#password').value='';$('#confirm').value='';
     if(mode==='signin'||(mode==='signup'&&result.data.session)){location.assign('./owner.html');return;}
-    if(mode==='signup')$('#status').textContent='Регистрация не завершена: сервер не выдал сессию. Для этого интерфейса администратору нужно отключить обязательное подтверждение email в настройках Auth. Если аккаунт уже существует, войдите или восстановите пароль.';
+    if(mode==='signup')$('#status').textContent='Если регистрация доступна для этого адреса, на него придёт письмо подтверждения. Проверьте почту, затем войдите.';
     if(mode==='recovery')$('#status').textContent='Если адрес зарегистрирован, на него придёт ссылка. Откройте её в этом браузере.';
     if(mode==='update'){
       const {error}=await client.auth.signOut({scope:'local'});if(error)throw error;
       recoverySession=false;busy=false;setMode('signin');history.replaceState(null,'',location.pathname);$('#status').textContent='Пароль обновлён. Войдите с новым паролем.';
     }
-  }catch(error){$('#status').textContent=error.message==='auth_timeout'?'Сервер авторизации не ответил за 12 секунд. Попробуйте позже.':mode==='signin'?'Не удалось войти. Проверьте email и пароль.':errorMessage(error);}
-  finally{setBusy(false);}
+  }catch(error){$('#status').textContent=error?.code==='invalid_credentials'?'Неверный email или пароль.':error?.code==='email_not_confirmed'?'Подтвердите email по ссылке из письма.':errorMessage(error);}
+  finally{setBusy(false);if(recoverySession&&mode!=='update')setMode('update');}
 });
+
+// Bind submit before starting any asynchronous session work.
+let interaction=0;
+for(const m of ['signin','signup','recovery'])$('#'+m).onclick=()=>{interaction++;setMode(m);};
+async function initialize(){
+  try{
+    client=getClient();setMode('signin');setBusy(false);
+    client.auth.onAuthStateChange(event=>{
+      // Keep this callback synchronous: Auth may still own its session lock.
+      if(event==='PASSWORD_RECOVERY'){recoverySession=true;if(!busy)setMode('update');}
+    });
+    const initial=interaction;
+    const {data,error}=await client.auth.getSession();
+    if(initial!==interaction||busy)return;
+    if(error){$('#status').textContent=errorMessage(error);return;}
+    const params=new URL(location.href).searchParams;
+    if(params.get('flow')==='recovery'){
+      if(data.session){recoverySession=true;setMode('update');}
+      else{setMode('recovery');$('#status').textContent='Ссылка недействительна или истекла. Запросите новую ссылку в этом браузере.';}
+    }else if(data.session&&!recoverySession){
+      const verified=await client.auth.getUser();
+      if(initial!==interaction||busy)return;
+      if(!verified.error&&verified.data.user){location.replace('./owner.html');return;}
+      $('#status').textContent=errorMessage(verified.error);
+    }else $('#status').textContent='';
+    if(location.hash.includes('error'))$('#status').textContent='Ссылка недействительна или истекла. Запросите новую.';
+    if(params.get('notice')==='logout-local')$('#status').textContent='Вы вышли на этом устройстве. Завершение серверной сессии не подтверждено.';
+    history.replaceState(null,'',location.pathname+(recoverySession?'?flow=recovery':''));
+  }catch(error){
+    $('#status').textContent=client?errorMessage(error):'Не удалось загрузить подключение кабинета. Обновите страницу.';
+    setBusy(false);
+  }
+}
+void initialize();
