@@ -17,7 +17,7 @@ async function load(){
   const roleLabels={owner:'Владелец',admin:'Администратор',manager:'Управляющий',staff:'Сотрудник'};
   $('#accountRoles').textContent=[...new Set((membership.data||[]).map(m=>roleLabels[m.member_role]||'Доступ по назначенной роли'))].join(' · ')||'Нет назначенных ролей';
   const items=await loadAccessibleProperties(client,data.user.id);setWidgetProperties(items);
-  show(items.length?'Доступные объекты':'Объектов пока нет',items.length?`${items.length} объектов в вашем кабинете.`:'Аккаунт ещё не привязан к объектам. Обратитесь к администратору. Регистрация не выдаёт права автоматически.');
+  show(items.length?'Доступные объекты':'Объектов пока нет',items.length?`Количество объектов в кабинете: ${items.length}.`:'Аккаунт ещё не привязан к объектам. Обратитесь к администратору. Регистрация не выдаёт права автоматически.');
   for(const p of items){
    const card=document.createElement('article');card.className='property-card';const info=document.createElement('div'),name=document.createElement('h3'),status=document.createElement('p');
    name.textContent=p.name||'Объект без названия';status.textContent=p.published?'Опубликован':'Не опубликован';info.append(name,status,bookingLink('Календарь','calendar',p.id),document.createTextNode(' · '),bookingLink('Заявки гостей','requests',p.id));card.append(info);$('#properties').append(card);

@@ -16,6 +16,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npx playwright install --with-deps chromium
       - run: node --test tests/auth-transport.test.mjs
+      - run: node owner-dashboard.test.mjs
       - run: node tests/booking/stand/m5-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()

@@ -41,3 +41,9 @@ Continue existing PR35; integrate existing M4 branch as dependency. No new Auth 
 ## Rollout
 
 No production/main/live Auth/n8n/real booking changes. SQL is CANDIDATE only. PR35 depends on the unmerged M4 chain; it cannot be deployed alone as a whole-cabinet release. A separately approved login-only patch can be extracted after review; backend resumption is still needed. Pausing the new booking mechanism retains guards/data and never silently restores unguarded legacy writes.
+
+## Concrete HTTPS acceptance setup to authorize
+
+Use a separately designated staging host (not hostframe.ru production), with its own TLS hostname and isolated PG17/GoTrue2.197.0/PostgREST16.5 processes. Keep database and internal APIs on loopback/private container network; expose only the UI proxy over HTTPS. Generate new staging-only keys; no working Supabase service keys, copied Auth users, contacts or booking records. Seed the same synthetic house/unit/resource fixture already used by CI. Configure GoTrue site URL/redirect allowlist for that exact HTTPS origin. Run the existing m5-real-auth browser journey against it, then give the owner the URL and synthetic test account. Stop/remove only the named test stack on expiry. This plan does not authorize changing a live Nginx route, DNS, Auth setting or installing production services.
+
+Available evidence is CI and local Yumis-pc. No publicly reachable working HTTPS staging URL is claimed. Required access/decision: designate the isolated staging host/TLS route (or authorize its provisioning on a specified machine) and separately authorize resumption of the existing inactive working Supabase project for subsequent read-only live configuration checks.
