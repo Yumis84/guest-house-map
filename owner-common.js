@@ -1,3 +1,4 @@
+import {boundedFetch} from './owner-auth-transport.js';
 export const BUCKET='owner-property-photos';
 export const MAX_PHOTO_BYTES=5*1024*1024;
 export const canEdit=role=>['owner','admin','manager'].includes(role);
@@ -20,7 +21,7 @@ export function getClient(){
   if(!client){
     const {url,key}=publicConfig(window.GUEST_HOUSE_SUPABASE_CONFIG);
     if(!window.supabase?.createClient) throw Error('Не удалось загрузить подключение. Обновите страницу.');
-    client=window.supabase.createClient(url,key,{auth:{flowType:'pkce',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    client=window.supabase.createClient(url,key,{global:{fetch:boundedFetch(window.fetch.bind(window))},auth:{flowType:'pkce',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   }
   return client;
 }

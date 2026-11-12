@@ -1,5 +1,6 @@
 -- Separate, disabled-by-default pilot gate. Only apply to an isolated rehearsal.
 begin;
+set local lock_timeout='2s';
 create table widget_private.pilots(property_id uuid primary key references public.properties(id),state text not null check(state in('prepared','active','paused')),changed_at timestamptz not null default clock_timestamp());
 alter table widget_private.pilots enable row level security;
 revoke all on widget_private.pilots from public,anon,authenticated;
@@ -17,10 +18,19 @@ declare prop uuid;begin
 end $$;
 revoke all on function public.booking_resource_pilot_enabled(uuid) from public,anon,authenticated;
 grant execute on function public.booking_resource_pilot_enabled(uuid) to authenticated,service_role;
+create function public.booking_property_pilot_enabled(p_property uuid) returns boolean language plpgsql security definer set search_path='' as $$
+begin if current_setting('role',true)<>'service_role' then perform widget_private.booking_assert_owner(p_property);end if;
+return exists(select 1 from widget_private.pilots where property_id=p_property and state in('active','paused'));end $$;
+revoke all on function public.booking_property_pilot_enabled(uuid) from public,anon,authenticated;
+grant execute on function public.booking_property_pilot_enabled(uuid) to authenticated,service_role;
 -- SECURITY INVOKER is intentional: direct API role is visible; a reviewed
 -- SECURITY DEFINER booking RPC runs as its owner and may perform the write.
 create function widget_private.guard_pilot_dml() returns trigger language plpgsql security invoker set search_path='' as $$
 declare old_unit uuid;new_unit uuid;begin
+ if current_user in('anon','authenticated','service_role') and tg_table_name='booking_requests' then
+  if tg_op in('UPDATE','DELETE') then if public.booking_property_pilot_enabled(old.property_id) then raise exception 'use_booking_rpc' using errcode='42501';end if;end if;
+  if tg_op in('UPDATE','INSERT') then if public.booking_property_pilot_enabled(new.property_id) then raise exception 'use_booking_rpc' using errcode='42501';end if;end if;
+ end if;
  if tg_op in('UPDATE','DELETE') then old_unit=old.unit_id;end if;
  if tg_op in('UPDATE','INSERT') then new_unit=new.unit_id;end if;
  if current_user in('anon','authenticated','service_role') and tg_table_name='inventory_allocations' then
@@ -34,9 +44,15 @@ revoke all on function widget_private.guard_pilot_dml() from public,anon,authent
 create trigger booking_m4_block_guard before insert or update or delete on public.unit_blocks for each row execute function widget_private.guard_pilot_dml();
 create trigger booking_m4_allocation_guard before insert or update or delete on public.inventory_allocations for each row execute function widget_private.guard_pilot_dml();
 create trigger booking_m4_reservation_guard before insert or update or delete on public.reservations for each row execute function widget_private.guard_pilot_dml();
-create trigger booking_m4_legacy_guard before update or delete on public.booking_requests for each row execute function widget_private.guard_pilot_dml();
+create trigger booking_m4_legacy_guard before insert or update or delete on public.booking_requests for each row execute function widget_private.guard_pilot_dml();
+-- Direct TRUNCATE never participates in row guards or the occupancy ledger.
+create function widget_private.guard_pilot_truncate() returns trigger language plpgsql security invoker set search_path='' as $$
+begin if current_user in('anon','authenticated','service_role') then raise exception 'use_booking_rpc' using errcode='42501';end if;return null;end $$;
+revoke all on function widget_private.guard_pilot_truncate() from public,anon,authenticated,service_role;
+create trigger booking_m5_allocation_truncate before truncate on public.inventory_allocations for each statement execute function widget_private.guard_pilot_truncate();
 alter function public.submit_stepan_booking(date,date,integer,text,text,text,text) rename to booking_legacy_submit_original;
 alter function public.booking_legacy_submit_original(date,date,integer,text,text,text,text) set schema widget_private;
+revoke all on function widget_private.booking_legacy_submit_original(date,date,integer,text,text,text,text) from public,anon,authenticated,service_role;
 create function public.submit_stepan_booking(p_checkin date,p_checkout date,p_guests integer,p_name text,p_phone text,p_email text,p_comment text) returns uuid language plpgsql security definer set search_path='' as $$
 begin
  if exists(select 1 from widget_private.pilots x join public.properties p on p.id=x.property_id where p.source_key='house_001' and x.state in('active','paused')) then raise exception 'booking_channel_switched' using errcode='55000';end if;

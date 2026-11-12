@@ -1,5 +1,6 @@
 -- Transactional events contain identifiers/status only, never guest contacts.
 begin;
+set local lock_timeout='2s';
 create table widget_private.outbox(id bigint primary key references widget_private.history(id),action text not null,request_id uuid,legacy_request_id uuid,block_id uuid,state text not null default 'pending' check(state in('pending','leased','sent','failed')),attempts integer not null default 0,available_at timestamptz not null default clock_timestamp(),lease uuid,lease_until timestamptz,last_code text);
 alter table widget_private.outbox enable row level security;
 revoke all on widget_private.outbox from public,anon,authenticated;

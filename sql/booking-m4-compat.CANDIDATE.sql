@@ -1,6 +1,7 @@
 -- M4 isolated compatibility candidate. Requires M1/M2/M3 and existing legacy tables.
 -- Never apply to production without exact-schema rehearsal and separate approval.
 begin;
+set local lock_timeout='2s';
 do $$begin if exists(select 1 from public.booking_requests l join widget_private.requests r on r.id=l.id) then raise exception 'request_id_collision';end if;end$$;
 alter table public.booking_requests add column revision integer not null default 1;
 alter table public.booking_requests add column reservation_id uuid references public.reservations(id);
@@ -29,6 +30,7 @@ alter function public.booking_owner_contacts(uuid) rename to booking_v3_contacts
 alter function public.booking_v3_contacts(uuid) set schema widget_private;
 alter function public.booking_owner_transition(uuid,text,integer,uuid) rename to booking_v3_transition;
 alter function public.booking_v3_transition(uuid,text,integer,uuid) set schema widget_private;
+revoke all on function widget_private.booking_v3_detail(uuid),widget_private.booking_v3_contacts(uuid),widget_private.booking_v3_transition(uuid,text,integer,uuid) from public,anon,authenticated,service_role;
 create view widget_private.owner_feed as
 select r.id,r.short_code,r.checkin,r.checkout,r.guests,r.status,r.revision,r.created_at,p.id property_id,p.name property_name,
 case when h.status='active' and h.expires_at<=clock_timestamp() then 'expired' else coalesce(h.status,'none') end hold_status,h.expires_at hold_expires_at,
@@ -47,7 +49,7 @@ begin
  perform widget_private.booking_assert_owner(p_property);
  if p_limit is null or p_limit not between 1 and 50 or length(coalesce(p_q,''))>36 then raise exception 'invalid_payload' using errcode='22023';end if;
  if p_cursor is not null then begin perform (p_cursor->>'at')::timestamptz,(p_cursor->>'id')::uuid;if not p_cursor ?& array['at','id'] then raise exception 'invalid';end if;exception when others then raise exception 'invalid_payload' using errcode='22023';end;end if;
- select coalesce(jsonb_agg(to_jsonb(x) order by created_at desc,id desc),'[]') into items from(select * from widget_private.owner_feed r where property_id=p_property and (coalesce(p_status,'')='' or status=p_status) and (coalesce(p_q,'')='' or short_code ilike p_q||'%' or checkin::text like p_q||'%') and (p_cursor is null or (created_at,id)<((p_cursor->>'at')::timestamptz,(p_cursor->>'id')::uuid)) order by created_at desc,id desc limit p_limit+1)x;
+ select coalesce(jsonb_agg(to_jsonb(x) order by created_at desc,id desc),'[]') into items from(select * from widget_private.owner_feed r where property_id=p_property and (coalesce(p_status,'')='' or status=p_status) and (coalesce(p_q,'')='' or left(lower(short_code),length(p_q))=lower(p_q) or left(checkin::text,length(p_q))=p_q) and (p_cursor is null or (created_at,id)<((p_cursor->>'at')::timestamptz,(p_cursor->>'id')::uuid)) order by created_at desc,id desc limit p_limit+1)x;
  if jsonb_array_length(items)>p_limit then items=items-p_limit;nextc=jsonb_build_object('at',items->(p_limit-1)->>'created_at','id',items->(p_limit-1)->>'id');end if;
  return jsonb_build_object('rows',items,'next_cursor',nextc,'counts',(select jsonb_build_object('pending',count(*) filter(where status='pending'),'confirmed',count(*) filter(where status='confirmed'),'closed',count(*) filter(where status in('declined','cancelled'))) from widget_private.owner_feed where property_id=p_property));
 end $$;
@@ -102,12 +104,13 @@ revoke all on function public.booking_owner_detail(uuid),public.booking_owner_co
 grant execute on function public.booking_owner_detail(uuid),public.booking_owner_contacts(uuid),public.booking_owner_transition(uuid,text,integer,uuid) to authenticated;
 alter function public.booking_owner_calendar(uuid,text) rename to booking_v3_calendar;
 alter function public.booking_v3_calendar(uuid,text) set schema widget_private;
+revoke all on function widget_private.booking_v3_calendar(uuid,text) from public,anon,authenticated,service_role;
 create function public.booking_owner_calendar(p_property uuid,p_month text) returns jsonb language plpgsql security definer set search_path='' as $$
 declare data jsonb;events jsonb;
 begin
  data=widget_private.booking_v3_calendar(p_property,p_month);
  select coalesce(jsonb_agg(case when l.id is null then e else e||jsonb_build_object('request_id',l.id) end),'[]') into events
- from jsonb_array_elements(data->'events') e left join public.booking_requests l on l.reservation_id=(e->>'id')::uuid and l.property_id=p_property and e->>'kind'='reservation';
+ from jsonb_array_elements(data->'events') e left join public.booking_requests l on l.reservation_id::text=(e->>'id') and l.property_id=p_property and e->>'kind'='reservation';
  return jsonb_set(data,'{events}',events);
 end $$;
 revoke all on function public.booking_owner_calendar(uuid,text) from public,anon,authenticated;

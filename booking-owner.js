@@ -2,7 +2,8 @@ import {getClient} from './owner-common.js';
 import {loadAccessibleProperties} from './owner-access.js';
 import {renderMonth,occupancyLabels} from './booking-calendar.js';
 const $=id=>document.getElementById(id),labels={pending:'На рассмотрении',confirmed:'Подтверждена',declined:'Отклонена',cancelled:'Отменена'};
-let client,view='today',cursor=null,month=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Kaliningrad',year:'numeric',month:'2-digit'}).slice(0,7),capabilities=false,busy=false,selection=null;
+const navigation=new URL(location.href).searchParams;
+let client,view=['today','requests','calendar','reservations'].includes(navigation.get('view'))?navigation.get('view'):'today',cursor=null,month=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Kaliningrad',year:'numeric',month:'2-digit'}).slice(0,7),capabilities=false,busy=false,selection=null;
 // Injected only by isolated test harness. No fixture flag or guest data in production URLs.
 const transport=window.BOOKING_TEST_TRANSPORT;
 const intents=new Map();let lastDetailTrigger=null;let lastDetailId=null;
@@ -23,8 +24,8 @@ for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>{view=b.da
 for(const [icon,label] of Object.values(occupancyLabels))$('legend').append(text('span',icon+' '+label));
 for(const [id,delta] of [['prev',-1],['next',1]])$(id).onclick=()=>{const d=new Date(month+'-01T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+delta);month=d.toISOString().slice(0,7);load();};
 $('close').onclick=()=>$('detail').close();$('detail').addEventListener('close',()=>{const fresh=[...$('rows').querySelectorAll('button')].find(b=>b.dataset.bookingId===String(lastDetailId));(fresh||lastDetailTrigger?.isConnected&&lastDetailTrigger||document.querySelector('[data-view][aria-current]'))?.focus();});$('retry').onclick=()=>load();$('more').onclick=()=>load(true);$('filter').onchange=()=>load();let lastSearchValue='';$('search').onchange=()=>{if($('search').value!==lastSearchValue){lastSearchValue=$('search').value;load();}};$('property').onchange=()=>load();
-syncViewControls();
-try{let properties;if(transport){properties=await transport('properties');$('environment').textContent='Изолированный тестовый стенд · только синтетические данные';}else{client=getClient();const r=await client.auth.getUser();if(r.error||!r.data.user){location.replace('login.html');throw Error();}properties=await loadAccessibleProperties(client,r.data.user.id);}for(const p of properties){const o=text('option',p.name);o.value=p.id;$('property').append(o);}if(properties.length===1)$('property').parentElement.hidden=true;try{capabilities=(await rpc('booking_owner_capabilities')).lifecycle===true;}catch{}await load();}catch(e){failure(e);}
+syncViewControls();$('heading').textContent=document.querySelector('[data-view][aria-current]')?.textContent||'Сегодня';
+try{let properties;if(transport){properties=await transport('properties');$('environment').textContent='Изолированный тестовый стенд · только синтетические данные';}else{client=getClient();client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT'){$('detailBody').replaceChildren();$('actions').replaceChildren();$('rows').replaceChildren();location.replace('login.html');}});const r=await client.auth.getUser();if(r.error)throw r.error;if(!r.data.user){location.replace('login.html');throw Error('unauthorized');}properties=await loadAccessibleProperties(client,r.data.user.id);}if(!properties.length){$('status').textContent='Нет доступных объектов. Обратитесь к администратору.';$('requests').hidden=true;$('calendar').hidden=true;}else for(const p of properties){const o=text('option',p.name);o.value=p.id;$('property').append(o);}if(properties.some(p=>p.id===navigation.get('property')))$('property').value=navigation.get('property');if(properties.length===1)$('property').parentElement.hidden=true;if(properties.length){try{capabilities=(await rpc('booking_owner_capabilities')).lifecycle===true;}catch{}await load();}}catch(e){failure(e);}
 
 $('calendarUnit').onchange=()=>load();
 let blockIntent=null;
