@@ -51,13 +51,13 @@ $('#form').addEventListener('submit',async event=>{
 let interaction=0;
 for(const m of ['signin','signup','recovery'])$('#'+m).onclick=()=>{interaction++;setMode(m);};
 async function initialize(){
+  const initial=interaction;
   try{
     client=getClient();setMode('signin');setBusy(false);
     client.auth.onAuthStateChange(event=>{
       // Keep this callback synchronous: Auth may still own its session lock.
       if(event==='PASSWORD_RECOVERY'){recoverySession=true;if(!busy)setMode('update');}
     });
-    const initial=interaction;
     const {data,error}=await client.auth.getSession();
     if(initial!==interaction||busy)return;
     if(error){$('#status').textContent=errorMessage(error);return;}
@@ -75,6 +75,7 @@ async function initialize(){
     if(params.get('notice')==='logout-local')$('#status').textContent='Вы вышли на этом устройстве. Завершение серверной сессии не подтверждено.';
     history.replaceState(null,'',location.pathname+(recoverySession?'?flow=recovery':''));
   }catch(error){
+    if(initial!==interaction||busy)return;
     $('#status').textContent=client?errorMessage(error):'Не удалось загрузить подключение кабинета. Обновите страницу.';
     setBusy(false);
   }
